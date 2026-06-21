@@ -1,3 +1,9 @@
+## Docker DB containers
+#### Создать контейнер с первой базой (например, stats)
+docker run --name postgres-ewm -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=stats -p 5432:5432 -d postgres:16.1
+####  Подключиться и создать вторую базу
+docker exec -it postgres-ewm psql -U postgres -c "CREATE DATABASE ewm;"
+
 ## Commets
 ### Доп. фича:
 - коментарии к событиям

@@ -51,7 +51,7 @@ public class StatsClient {
                 .path("/stats")
                 .queryParam("start", paramDto.getStart().format(FORMATTER))
                 .queryParam("end", paramDto.getEnd().format(FORMATTER))
-                .queryParam("uris", (Object)paramDto.getUris()) // убрал (Object). Из-за этого не работала статистика
+                .queryParam("uris", paramDto.getUris()) // убрал (Object). Из-за этого не работала статистика
                 .queryParam("unique", paramDto.getUnique())
                 .build()
                 .encode()
