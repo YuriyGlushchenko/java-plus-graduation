@@ -1,6 +1,6 @@
 spring:
   application:
-    name: stats-server
+    name: ewm-main-service
   config:
     import: "configserver:"
   cloud:

@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>ru.practicum</groupId>
-        <artifactId>explore-with-me</artifactId>
+        <artifactId>core</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>ewm-service</artifactId>
+    <artifactId>main-service</artifactId>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -20,6 +20,18 @@
 
     <dependencies>
         <!-- Ваши зависимости -->
+
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-config</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+
+
         <dependency>
             <groupId>ru.practicum</groupId>
             <artifactId>stats-client</artifactId>
@@ -88,6 +100,9 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>ru.practicum.ewm.EwmMainServiceApp</mainClass>
+                </configuration>
             </plugin>
 
             <!-- APT плагин для генерации Q-классов -->
@@ -128,4 +143,5 @@
             </plugin>
         </plugins>
     </build>
+
 </project>
