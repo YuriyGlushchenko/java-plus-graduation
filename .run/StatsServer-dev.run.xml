@@ -1,10 +1,11 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Stats-prod" type="Application" factoryName="Application">
+  <configuration default="false" name="StatsServer-dev" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="ru.practicum.stats.server.StatsServer" />
     <module name="stats-server" />
+    <option name="VM_PARAMETERS" value="-Dspring.profiles.active=dev" />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="ru.practicum.stats.server.repository.*" />
+        <option name="PATTERN" value="ru.practicum.stats.server.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>

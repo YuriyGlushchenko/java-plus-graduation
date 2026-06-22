@@ -1,7 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Ewm-dev" type="Application" factoryName="Application">
-    <option name="ALTERNATIVE_JRE_PATH" value="corretto-21" />
-    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+  <configuration default="false" name="EwmMainServiceApp-dev" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="ru.practicum.ewm.EwmMainServiceApp" />
     <module name="main-service" />
     <option name="VM_PARAMETERS" value="-Dspring.profiles.active=dev" />
