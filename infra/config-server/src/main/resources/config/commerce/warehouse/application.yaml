@@ -1,0 +1,24 @@
+server:
+  port: ${PORT:0}
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/commerce_db?currentSchema=warehouse
+    username: commerce_user
+    password: commerce_password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: warehouse
+
+  sql:
+    init:
+      mode: always
+      continue-on-error: false

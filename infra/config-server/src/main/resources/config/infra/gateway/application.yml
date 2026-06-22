@@ -1,0 +1,46 @@
+server:
+  port: 8080 # важно, что для Gateway-сервиса указали конкретный порт, чтобы пользователи всегда могли обращаться к Gateway по одному и тому же адресу.
+
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      default-filters:  # перечисляются фильтры, которые будут примененены ко всем роутам в Gateway
+        - PrefixPath=/api/v1 # добавляет в начало пути каждого запроса, обрабатываемого роутом, префикс /api/v1
+        - name: Retry
+          args:
+            retries: 3
+            statuses:
+              - NOT_FOUND
+      routes:
+        - id: shopping_cart_service_route
+          uri: lb://shopping-cart # Префикс lb здесь означает, что Gateway с помощью DiscoveryClient и встроенного балансировщика нагрузки найдёт экземпляр сервиса с идентификатором shopping-cart и перенаправит запрос ему.
+          predicates:
+            - Path=/shopping-cart/** # используется условие по пути запроса и роут будет обрабатывать запрос, если его путь соответствует шаблону /shopping-cart/**
+
+        - id: shopping_store_service_route
+          uri: lb://shopping-store
+          predicates:
+            - Path=/shopping-store/**
+
+        - id: warehouse_service_route
+          uri: lb://warehouse
+          predicates:
+            - Path=/warehouse/**
+
+        - id: order_service_route
+          uri: lb://order
+          predicates:
+            - Path=/order/**
+
+        - id: payment_service_route
+          uri: lb://payment
+          predicates:
+            - Path=/payment/**
+
+        - id: delivery_service_route
+          uri: lb://delivery
+          predicates:
+            - Path=/delivery/**
