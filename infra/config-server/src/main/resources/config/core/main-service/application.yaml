@@ -48,4 +48,4 @@ resilience4j.circuitbreaker:
       automaticTransitionFromOpenToHalfOpenEnabled: true
 
 app:
-  name: ${spring.application.name:ewm-main-service}
+  name: ${spring.application.name:main-service}

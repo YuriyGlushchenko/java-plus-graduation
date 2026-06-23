@@ -24,7 +24,7 @@ spring:
         response-timeout: 10s
       routes:
         - id: ewm-admin
-          uri: lb://ewm-main-service
+          uri: lb://main-service
           predicates:
             - Path=/admin/**
           filters:
@@ -35,7 +35,7 @@ spring:
                 fallbackUri: forward:/fallback
 
         - id: ewm-users
-          uri: lb://ewm-main-service
+          uri: lb://main-service
           predicates:
             - Path=/users/**
           filters:
@@ -46,7 +46,7 @@ spring:
                 fallbackUri: forward:/fallback
 
         - id: ewm-events
-          uri: lb://ewm-main-service
+          uri: lb://main-service
           predicates:
             - Path=/events/**
           filters:
@@ -57,7 +57,7 @@ spring:
                 fallbackUri: forward:/fallback
 
         - id: ewm-categories
-          uri: lb://ewm-main-service
+          uri: lb://main-service
           predicates:
             - Path=/categories/**
           filters:
@@ -68,7 +68,7 @@ spring:
                 fallbackUri: forward:/fallback
 
         - id: ewm-compilations
-          uri: lb://ewm-main-service
+          uri: lb://main-service
           predicates:
             - Path=/compilations/**
           filters:
@@ -76,6 +76,16 @@ spring:
             - name: CircuitBreaker
               args:
                 name: ewmCompilationsService
+                fallbackUri: forward:/fallback
+        - id: ewm-comments
+          uri: lb://main-service
+          predicates:
+            - Path=/comments/**
+          filters:
+            - StripPrefix=0
+            - name: CircuitBreaker
+              args:
+                name: ewmСommentsService
                 fallbackUri: forward:/fallback
 
 logging:

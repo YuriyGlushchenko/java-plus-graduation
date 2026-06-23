@@ -42,7 +42,7 @@ public class StatsClient {
             RestTemplate template,
             DiscoveryClient discoveryClient,
             @Value("${stats-service.id:stats-server}") String statsServiceId,
-            @Value("${app.name:default-app}") String appName
+            @Value("${app.name:main-service}") String appName
     ) {
         this.template = template;
         this.discoveryClient = discoveryClient;
@@ -132,7 +132,8 @@ public class StatsClient {
                     fullUri,
                     GET,
                     null,
-                    new ParameterizedTypeReference<List<ViewStatsDto>>() {}
+                    new ParameterizedTypeReference<>() {
+                    }
             );
 
             log.info("=== STATS CLIENT RESPONSE: status={}, body={} ===",
