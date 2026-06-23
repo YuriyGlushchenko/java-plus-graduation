@@ -27,8 +27,8 @@ spring:
       circuitbreaker:
         enabled: true
 
-stats-server:
-  url: http://localhost:9090
+#stats-server:
+#  url: http://localhost:9090
 
 stats-service:
   id: stats-server
