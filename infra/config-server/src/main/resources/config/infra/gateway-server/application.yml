@@ -1,0 +1,35 @@
+server:
+  port: 8080
+
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: ewm-admin
+          uri: lb://ewm-main-service
+          predicates:
+            - Path=/admin/**
+
+        - id: ewm-users
+          uri: lb://ewm-main-service
+          predicates:
+            - Path=/users/**
+
+        - id: ewm-events
+          uri: lb://ewm-main-service
+          predicates:
+            - Path=/events/**
+
+        - id: ewm-categories
+          uri: lb://ewm-main-service
+          predicates:
+            - Path=/categories/**
+
+        - id: ewm-compilations
+          uri: lb://ewm-main-service
+          predicates:
+            - Path=/compilations/**
