@@ -1,0 +1,103 @@
+server:
+  port: 8080
+
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      default-filters:
+        - name: Retry
+          args:
+            retries: 3
+            statuses:
+              - NOT_FOUND
+              - SERVICE_UNAVAILABLE
+              - GATEWAY_TIMEOUT
+        - name: DedupeResponseHeader
+          args:
+            name: Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      httpclient:
+        connect-timeout: 1000
+        response-timeout: 10s
+      routes:
+        - id: ewm-admin
+          uri: lb://main-service
+          predicates:
+            - Path=/admin/**
+          filters:
+            - StripPrefix=0
+            - name: CircuitBreaker
+              args:
+                name: ewmAdminService
+                fallbackUri: forward:/fallback
+
+        - id: ewm-users
+          uri: lb://main-service
+          predicates:
+            - Path=/users/**
+          filters:
+            - StripPrefix=0
+            - name: CircuitBreaker
+              args:
+                name: ewmUsersService
+                fallbackUri: forward:/fallback
+
+        - id: ewm-events
+          uri: lb://main-service
+          predicates:
+            - Path=/events/**
+          filters:
+            - StripPrefix=0
+            - name: CircuitBreaker
+              args:
+                name: ewmEventsService
+                fallbackUri: forward:/fallback
+
+        - id: ewm-categories
+          uri: lb://main-service
+          predicates:
+            - Path=/categories/**
+          filters:
+            - StripPrefix=0
+            - name: CircuitBreaker
+              args:
+                name: ewmCategoriesService
+                fallbackUri: forward:/fallback
+
+        - id: ewm-compilations
+          uri: lb://main-service
+          predicates:
+            - Path=/compilations/**
+          filters:
+            - StripPrefix=0
+            - name: CircuitBreaker
+              args:
+                name: ewmCompilationsService
+                fallbackUri: forward:/fallback
+        - id: ewm-comments
+          uri: lb://main-service
+          predicates:
+            - Path=/comments/**
+          filters:
+            - StripPrefix=0
+            - name: CircuitBreaker
+              args:
+                name: ewmСommentsService
+                fallbackUri: forward:/fallback
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    gateway:
+      enabled: true
