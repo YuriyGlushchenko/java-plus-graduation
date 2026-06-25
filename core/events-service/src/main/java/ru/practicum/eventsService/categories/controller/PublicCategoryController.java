@@ -5,8 +5,9 @@ import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.ewm.categories.dto.CategoryDto;
-import ru.practicum.ewm.categories.service.CategoryService;
+import ru.practicum.eventsService.categories.dto.CategoryDto;
+import ru.practicum.eventsService.categories.service.CategoryService;
+
 
 import java.util.List;
 

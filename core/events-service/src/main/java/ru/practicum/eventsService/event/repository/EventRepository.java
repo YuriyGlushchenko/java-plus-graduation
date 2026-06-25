@@ -1,7 +1,7 @@
 package ru.practicum.eventsService.event.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import ru.practicum.ewm.event.model.Event;
+import ru.practicum.eventsService.event.model.Event;
 
 import java.util.Collection;
 import java.util.List;

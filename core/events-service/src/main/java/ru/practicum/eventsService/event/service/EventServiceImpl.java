@@ -4,36 +4,43 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.ewm.categories.model.Category;
-import ru.practicum.ewm.categories.repository.CategoryRepository;
-import ru.practicum.ewm.comments.model.CommentStatus;
-import ru.practicum.ewm.comments.repository.CommentRepository;
-import ru.practicum.ewm.event.dto.paramDto.AdminUserEventParam;
-import ru.practicum.ewm.event.dto.paramDto.EventRepositoryParam;
-import ru.practicum.ewm.event.dto.paramDto.PublicUserEventParam;
-import ru.practicum.ewm.event.model.Event;
-import ru.practicum.ewm.event.model.EventSort;
-import ru.practicum.ewm.event.model.EventState;
-import ru.practicum.ewm.event.repository.EventRepository;
-import ru.practicum.ewm.exceptions.exceptions.ConditionsNotMetException;
-import ru.practicum.ewm.exceptions.exceptions.NotFoundException;
-import ru.practicum.ewm.request.dto.EventRequestStatusUpdateRequest;
-import ru.practicum.ewm.request.dto.EventRequestStatusUpdateResult;
-import ru.practicum.ewm.request.dto.ParticipationRequestDto;
-import ru.practicum.ewm.request.dto.ParticipationRequestMapper;
-import ru.practicum.ewm.request.model.ParticipationRequest;
-import ru.practicum.ewm.request.model.RequestStatus;
-import ru.practicum.ewm.request.repository.ParticipationRequestRepository;
-import ru.practicum.ewm.user.model.User;
-import ru.practicum.ewm.user.repository.UserRepository;
+
+import ru.practicum.commentsService.comments.model.CommentStatus;
+import ru.practicum.commentsService.comments.repository.CommentRepository;
+import ru.practicum.eventsService.categories.model.Category;
+import ru.practicum.eventsService.categories.repository.CategoryRepository;
+import ru.practicum.eventsService.event.dto.*;
+import ru.practicum.eventsService.event.dto.paramDto.AdminUserEventParam;
+import ru.practicum.eventsService.event.dto.paramDto.EventRepositoryParam;
+import ru.practicum.eventsService.event.dto.paramDto.PublicUserEventParam;
+import ru.practicum.eventsService.event.model.Event;
+import ru.practicum.eventsService.event.model.EventSort;
+import ru.practicum.eventsService.event.model.EventState;
+import ru.practicum.eventsService.event.repository.EventRepository;
+import ru.practicum.eventsService.exceptions.exceptions.ConditionsNotMetException;
+import ru.practicum.eventsService.exceptions.exceptions.NotFoundException;
+import ru.practicum.requestsService.request.dto.EventRequestStatusUpdateRequest;
+import ru.practicum.requestsService.request.dto.EventRequestStatusUpdateResult;
+import ru.practicum.requestsService.request.dto.ParticipationRequestDto;
+import ru.practicum.requestsService.request.dto.ParticipationRequestMapper;
+import ru.practicum.requestsService.request.model.ParticipationRequest;
+import ru.practicum.requestsService.request.model.RequestStatus;
+import ru.practicum.requestsService.request.repository.ParticipationRequestRepository;
 import ru.practicum.stat.client.StatsClient;
 import ru.practicum.stat.dto.EndpointHitDto;
 import ru.practicum.stat.dto.ParamDto;
 import ru.practicum.stat.dto.ViewStatsDto;
+import ru.practicum.userService.user.model.User;
+import ru.practicum.userService.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static ru.practicum.eventsService.event.model.AdminStateAction.PUBLISH_EVENT;
+import static ru.practicum.eventsService.event.model.AdminStateAction.REJECT_EVENT;
+import static ru.practicum.eventsService.event.model.UserStateAction.CANCEL_REVIEW;
+import static ru.practicum.eventsService.event.model.UserStateAction.SEND_TO_REVIEW;
 
 
 @Slf4j

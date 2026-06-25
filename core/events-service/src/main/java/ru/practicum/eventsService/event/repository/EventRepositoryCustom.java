@@ -1,8 +1,10 @@
 package ru.practicum.eventsService.event.repository;
 
-import ru.practicum.ewm.event.dto.EventFullDto;
-import ru.practicum.ewm.event.dto.EventShortDto;
-import ru.practicum.ewm.event.dto.paramDto.EventRepositoryParam;
+
+
+import ru.practicum.eventsService.event.dto.EventFullDto;
+import ru.practicum.eventsService.event.dto.EventShortDto;
+import ru.practicum.eventsService.event.dto.paramDto.EventRepositoryParam;
 
 import java.util.List;
 import java.util.Optional;

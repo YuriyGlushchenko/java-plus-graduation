@@ -6,8 +6,9 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
-import ru.practicum.ewm.compilation.model.Compilation;
-import ru.practicum.ewm.event.model.Event;
+import ru.practicum.eventsService.compilation.model.Compilation;
+import ru.practicum.eventsService.event.model.Event;
+
 
 import java.sql.PreparedStatement;
 import java.util.*;

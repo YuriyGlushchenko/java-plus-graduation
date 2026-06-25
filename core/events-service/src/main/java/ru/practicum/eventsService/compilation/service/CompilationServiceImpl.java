@@ -3,16 +3,17 @@ package ru.practicum.eventsService.compilation.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.ewm.compilation.dto.CompilationDto;
-import ru.practicum.ewm.compilation.dto.CompilationMapper;
-import ru.practicum.ewm.compilation.dto.NewCompilationDto;
-import ru.practicum.ewm.compilation.dto.UpdateCompilationRequest;
-import ru.practicum.ewm.compilation.model.Compilation;
-import ru.practicum.ewm.compilation.repository.CompilationRepository;
-import ru.practicum.ewm.event.dto.EventShortDto;
-import ru.practicum.ewm.event.model.Event;
-import ru.practicum.ewm.event.service.EventService;
-import ru.practicum.ewm.exceptions.exceptions.NotFoundException;
+import ru.practicum.eventsService.compilation.dto.CompilationDto;
+import ru.practicum.eventsService.compilation.dto.CompilationMapper;
+import ru.practicum.eventsService.compilation.dto.NewCompilationDto;
+import ru.practicum.eventsService.compilation.dto.UpdateCompilationRequest;
+import ru.practicum.eventsService.compilation.model.Compilation;
+import ru.practicum.eventsService.compilation.repository.CompilationRepository;
+import ru.practicum.eventsService.event.dto.EventShortDto;
+import ru.practicum.eventsService.event.model.Event;
+import ru.practicum.eventsService.event.service.EventService;
+import ru.practicum.eventsService.exceptions.exceptions.NotFoundException;
+
 
 import java.util.*;
 import java.util.stream.Collectors;

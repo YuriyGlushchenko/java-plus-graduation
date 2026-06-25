@@ -1,10 +1,8 @@
 package ru.practicum.eventsService.compilation.dto;
 
-import ru.practicum.ewm.compilation.dto.NewCompilationDto;
-import ru.practicum.ewm.compilation.dto.UpdateCompilationRequest;
-import ru.practicum.ewm.compilation.model.Compilation;
-import ru.practicum.ewm.event.dto.EventShortDto;
-import ru.practicum.ewm.event.model.Event;
+import ru.practicum.eventsService.compilation.model.Compilation;
+import ru.practicum.eventsService.event.dto.EventShortDto;
+import ru.practicum.eventsService.event.model.Event;
 
 import java.util.ArrayList;
 import java.util.List;

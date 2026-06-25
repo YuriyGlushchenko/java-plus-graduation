@@ -1,6 +1,7 @@
 package ru.practicum.eventsService.categories.repository;
 
-import ru.practicum.ewm.categories.model.Category;
+
+import ru.practicum.eventsService.categories.model.Category;
 
 import java.util.List;
 

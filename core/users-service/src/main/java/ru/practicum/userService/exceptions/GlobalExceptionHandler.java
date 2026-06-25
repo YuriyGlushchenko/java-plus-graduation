@@ -12,10 +12,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import ru.practicum.ewm.exceptions.exceptions.ConditionsNotMetException;
-import ru.practicum.ewm.exceptions.exceptions.NotFoundException;
-import ru.practicum.ewm.exceptions.exceptions.ValidationException;
-import ru.practicum.ewm.exceptions.responseMessage.ApiError;
+import ru.practicum.userService.exceptions.exceptions.ConditionsNotMetException;
+import ru.practicum.userService.exceptions.exceptions.NotFoundException;
+import ru.practicum.userService.exceptions.exceptions.ValidationException;
+import ru.practicum.userService.exceptions.responseMessage.ApiError;
+
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

@@ -19,10 +19,25 @@
 
     <dependencies>
 
+        <!-- ✅ Зависимость от events-service для доступа к Event -->
+        <dependency>
+            <groupId>ru.practicum</groupId>
+            <artifactId>events-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- ✅ Зависимость от users-service для доступа к User -->
+        <dependency>
+            <groupId>ru.practicum</groupId>
+            <artifactId>users-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>

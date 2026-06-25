@@ -1,8 +1,10 @@
 package ru.practicum.eventsService.compilation.service;
 
-import ru.practicum.ewm.compilation.dto.CompilationDto;
-import ru.practicum.ewm.compilation.dto.NewCompilationDto;
-import ru.practicum.ewm.compilation.dto.UpdateCompilationRequest;
+
+
+import ru.practicum.eventsService.compilation.dto.CompilationDto;
+import ru.practicum.eventsService.compilation.dto.NewCompilationDto;
+import ru.practicum.eventsService.compilation.dto.UpdateCompilationRequest;
 
 import java.util.List;
 

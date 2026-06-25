@@ -7,15 +7,14 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
-import ru.practicum.ewm.categories.dto.CategoryDto;
-import ru.practicum.ewm.event.dto.EventFullDto;
-import ru.practicum.ewm.event.dto.EventShortDto;
-import ru.practicum.ewm.event.dto.paramDto.EventRepositoryParam;
-import ru.practicum.ewm.event.model.EventState;
-import ru.practicum.ewm.event.model.QEvent;
-import ru.practicum.ewm.request.model.QParticipationRequest;
-import ru.practicum.ewm.request.model.RequestStatus;
-import ru.practicum.ewm.user.dto.UserShortDto;
+import ru.practicum.eventsService.categories.dto.CategoryDto;
+import ru.practicum.eventsService.event.dto.EventFullDto;
+import ru.practicum.eventsService.event.dto.EventShortDto;
+import ru.practicum.eventsService.event.dto.paramDto.EventRepositoryParam;
+import ru.practicum.eventsService.event.model.EventState;
+import ru.practicum.requestsService.request.model.RequestStatus;
+import ru.practicum.userService.user.dto.UserShortDto;
+
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -7,11 +7,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.ewm.categories.dto.CategoryDto;
-import ru.practicum.ewm.event.dto.Commentable;
-import ru.practicum.ewm.event.model.EventState;
-import ru.practicum.ewm.event.model.Location;
-import ru.practicum.ewm.user.dto.UserShortDto;
+import ru.practicum.eventsService.categories.dto.CategoryDto;
+import ru.practicum.eventsService.event.model.EventState;
+import ru.practicum.eventsService.event.model.Location;
+import ru.practicum.userService.user.dto.UserShortDto;
+
 
 import java.time.LocalDateTime;
 

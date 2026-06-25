@@ -16,6 +16,7 @@
         <module>requests-service</module>
         <module>users-service</module>
         <module>comments-service</module>
+        <module>common</module>
     </modules>
 
     <artifactId>core</artifactId>

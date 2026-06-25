@@ -2,8 +2,9 @@ package ru.practicum.eventsService.compilation.controllers;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.ewm.compilation.dto.CompilationDto;
-import ru.practicum.ewm.compilation.service.CompilationService;
+import ru.practicum.eventsService.compilation.dto.CompilationDto;
+import ru.practicum.eventsService.compilation.service.CompilationService;
+
 
 import java.util.List;
 

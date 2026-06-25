@@ -1,6 +1,7 @@
 package ru.practicum.eventsService.categories.dto;
 
-import ru.practicum.ewm.categories.model.Category;
+
+import ru.practicum.eventsService.categories.model.Category;
 
 public class CategoryMapper {
     public static Category toCategory(CategoryDto categoryDto) {

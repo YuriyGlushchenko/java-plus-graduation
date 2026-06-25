@@ -1,12 +1,13 @@
 package ru.practicum.eventsService.event.dto;
 
 import lombok.RequiredArgsConstructor;
-import ru.practicum.ewm.categories.dto.CategoryMapper;
-import ru.practicum.ewm.categories.model.Category;
-import ru.practicum.ewm.event.model.Event;
-import ru.practicum.ewm.event.model.EventState;
-import ru.practicum.ewm.user.dto.UserMapper;
-import ru.practicum.ewm.user.model.User;
+import ru.practicum.eventsService.categories.dto.CategoryMapper;
+import ru.practicum.eventsService.categories.model.Category;
+import ru.practicum.eventsService.event.model.Event;
+import ru.practicum.eventsService.event.model.EventState;
+import ru.practicum.userService.user.dto.UserMapper;
+import ru.practicum.userService.user.model.User;
+
 
 import java.time.LocalDateTime;
 

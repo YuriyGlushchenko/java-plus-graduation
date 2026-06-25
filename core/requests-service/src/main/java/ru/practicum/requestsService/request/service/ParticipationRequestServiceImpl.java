@@ -3,18 +3,19 @@ package ru.practicum.requestsService.request.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.practicum.ewm.event.model.Event;
-import ru.practicum.ewm.event.model.EventState;
-import ru.practicum.ewm.event.repository.EventRepository;
-import ru.practicum.ewm.exceptions.exceptions.ConditionsNotMetException;
-import ru.practicum.ewm.exceptions.exceptions.NotFoundException;
-import ru.practicum.ewm.request.dto.ParticipationRequestDto;
-import ru.practicum.ewm.request.dto.ParticipationRequestMapper;
-import ru.practicum.ewm.request.model.ParticipationRequest;
-import ru.practicum.ewm.request.model.RequestStatus;
-import ru.practicum.ewm.request.repository.ParticipationRequestRepository;
-import ru.practicum.ewm.user.model.User;
-import ru.practicum.ewm.user.repository.UserRepository;
+import ru.practicum.eventsService.event.model.Event;
+import ru.practicum.eventsService.event.model.EventState;
+import ru.practicum.eventsService.event.repository.EventRepository;
+import ru.practicum.eventsService.exceptions.exceptions.ConditionsNotMetException;
+import ru.practicum.eventsService.exceptions.exceptions.NotFoundException;
+import ru.practicum.requestsService.request.dto.ParticipationRequestDto;
+import ru.practicum.requestsService.request.dto.ParticipationRequestMapper;
+import ru.practicum.requestsService.request.model.ParticipationRequest;
+import ru.practicum.requestsService.request.model.RequestStatus;
+import ru.practicum.requestsService.request.repository.ParticipationRequestRepository;
+import ru.practicum.userService.user.model.User;
+import ru.practicum.userService.user.repository.UserRepository;
+
 
 import java.util.List;
 

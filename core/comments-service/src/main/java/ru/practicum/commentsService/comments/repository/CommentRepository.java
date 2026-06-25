@@ -5,8 +5,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import ru.practicum.ewm.comments.model.Comment;
-import ru.practicum.ewm.comments.model.CommentStatus;
+import ru.practicum.commentsService.comments.model.Comment;
+import ru.practicum.commentsService.comments.model.CommentStatus;
 
 import java.util.List;
 import java.util.Optional;
