@@ -7,7 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
-import ru.practicum.ewm.event.model.EventState;
+import ru.practicum.eventsService.event.model.EventState;
 
 import java.time.LocalDateTime;
 import java.util.List;

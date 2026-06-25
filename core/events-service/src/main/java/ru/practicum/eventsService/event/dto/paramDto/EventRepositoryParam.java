@@ -4,9 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.ewm.event.dto.paramDto.AdminUserEventParam;
-import ru.practicum.ewm.event.model.EventSort;
-import ru.practicum.ewm.event.model.EventState;
+import ru.practicum.eventsService.event.model.EventSort;
+import ru.practicum.eventsService.event.model.EventState;
+
 
 import java.time.LocalDateTime;
 import java.util.List;

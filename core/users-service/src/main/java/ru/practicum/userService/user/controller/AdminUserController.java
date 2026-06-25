@@ -7,9 +7,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
-import ru.practicum.ewm.user.dto.NewUserRequest;
-import ru.practicum.ewm.user.dto.UserDto;
-import ru.practicum.ewm.user.service.UserService;
+import org.springframework.web.bind.annotation.*;
+import ru.practicum.userService.user.dto.NewUserRequest;
+import ru.practicum.userService.user.dto.UserDto;
+import ru.practicum.userService.user.service.UserService;
+
 
 import java.util.List;
 
