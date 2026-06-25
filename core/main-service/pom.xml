@@ -15,11 +15,39 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <querydsl.version>5.1.0</querydsl.version>
     </properties>
 
     <dependencies>
-        <!-- Ваши зависимости -->
+
+        <dependency>
+            <groupId>ru.practicum</groupId>
+            <artifactId>events-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ru.practicum</groupId>
+            <artifactId>requests-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ru.practicum</groupId>
+            <artifactId>users-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ru.practicum</groupId>
+            <artifactId>comments-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+
+
+
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+
 
         <dependency>
             <groupId>org.springframework.cloud</groupId>
@@ -86,11 +114,9 @@
             <artifactId>jakarta.persistence-api</artifactId>
         </dependency>
 
-        <!-- QueryDSL JPA - только runtime -->
         <dependency>
             <groupId>com.querydsl</groupId>
             <artifactId>querydsl-jpa</artifactId>
-            <version>${querydsl.version}</version>
             <classifier>jakarta</classifier>
         </dependency>
 

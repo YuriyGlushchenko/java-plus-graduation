@@ -1,6 +1,6 @@
-package ru.practicum.ewm;
+package ru.practicum.requestsService;
 
-import com.querydsl.jpa.impl.JPAQueryFactory;
+//import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
@@ -19,10 +19,10 @@ public class AppConfig {
     }
 
     // бин JPAQueryFactory для QueryDSL
-    @Bean
-    public JPAQueryFactory jpaQueryFactory() {
-        return new JPAQueryFactory(entityManager);
-    }
+//    @Bean
+//    public JPAQueryFactory jpaQueryFactory() {
+//        return new JPAQueryFactory(entityManager);
+//    }
 
     // бин RestTemplate для StatsClient
     @Bean

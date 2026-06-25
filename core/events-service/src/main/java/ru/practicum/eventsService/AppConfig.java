@@ -1,4 +1,4 @@
-package ru.practicum.ewm;
+package ru.practicum.eventsService;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
