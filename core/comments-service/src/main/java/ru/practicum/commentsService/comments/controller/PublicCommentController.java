@@ -5,8 +5,9 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
-import ru.practicum.ewm.comments.dto.CommentShortDto;
-import ru.practicum.ewm.comments.service.CommentService;
+import org.springframework.web.bind.annotation.*;
+import ru.practicum.commentsService.comments.service.CommentService;
+import ru.practicum.common.dto.comments.CommentShortDto;
 
 import java.util.List;
 

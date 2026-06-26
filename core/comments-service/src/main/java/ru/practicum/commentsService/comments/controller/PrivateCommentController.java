@@ -6,10 +6,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
-import ru.practicum.ewm.comments.dto.CommentFullDto;
-import ru.practicum.ewm.comments.dto.NewCommentDto;
-import ru.practicum.ewm.comments.dto.UpdateCommentUserRequest;
-import ru.practicum.ewm.comments.service.CommentService;
+import org.springframework.web.bind.annotation.*;
+import ru.practicum.commentsService.comments.dto.NewCommentDto;
+import ru.practicum.commentsService.comments.dto.UpdateCommentUserRequest;
+import ru.practicum.commentsService.comments.service.CommentService;
+import ru.practicum.common.dto.comments.CommentFullDto;
+
 
 @Slf4j
 @RestController

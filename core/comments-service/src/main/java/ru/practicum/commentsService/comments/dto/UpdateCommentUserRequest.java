@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.ewm.comments.model.CommentStatus;
+import ru.practicum.commentsService.comments.model.CommentStatus;
 
 @Data
 @Builder

@@ -5,7 +5,6 @@ import org.springframework.stereotype.Component;
 import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateResult;
 import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;
 import ru.practicum.common.dto.participationRequest.RequestStatus;
-import ru.practicum.eventsService.event.model.Event;
 import ru.practicum.requestsService.request.model.ParticipationRequest;
 import ru.practicum.userService.user.model.User;
 
@@ -21,20 +20,21 @@ public class ParticipationRequestMapper {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public static ParticipationRequest toParticipationRequest(Event event, User requester) {
+    public static ParticipationRequest toParticipationRequest(Long eventId, User requester) {
         return ParticipationRequest.builder()
-                .event(event)
+                .eventId(eventId)
                 .requester(requester)
                 .created(LocalDateTime.now())
                 .status(RequestStatus.PENDING)
                 .build();
+
     }
 
     public static ParticipationRequestDto toParticipationRequestDto(ParticipationRequest request) {
         return ParticipationRequestDto.builder()
                 .id(request.getId())
                 .created(request.getCreated().format(FORMATTER))
-                .event(request.getEvent().getId())
+                .event(request.getEventId())
                 .requester(request.getRequester().getId())
                 .status(request.getStatus())
                 .build();

@@ -7,13 +7,15 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+import ru.practicum.common.dto.participationRequest.RequestStatus;
 import ru.practicum.eventsService.categories.dto.CategoryDto;
 import ru.practicum.eventsService.event.dto.EventFullDto;
 import ru.practicum.eventsService.event.dto.EventShortDto;
 import ru.practicum.eventsService.event.dto.paramDto.EventRepositoryParam;
 import ru.practicum.eventsService.event.model.EventState;
-import ru.practicum.requestsService.request.model.RequestStatus;
-import ru.practicum.userService.user.dto.UserShortDto;
+import ru.practicum.common.dto.users.UserShortDto;
+import ru.practicum.eventsService.event.model.QEvent;
+import ru.practicum.requestsService.request.model.QParticipationRequest;
 
 
 import java.time.LocalDateTime;
@@ -49,7 +51,7 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                 ))
                 .from(event)
                 .leftJoin(request).on(
-                        request.event.eq(event)
+                        request.eventId.eq(event.id)
                                 .and(request.status.eq(RequestStatus.CONFIRMED))
                 )
                 .where(predicate)
@@ -109,7 +111,7 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                                 Expressions.asNumber(0L).as("commentsCount")
                         ))
                         .from(event)
-                        .leftJoin(request).on(request.event.eq(event).and(request.status.eq(RequestStatus.CONFIRMED)))
+                        .leftJoin(request).on(request.eventId.eq(event.id).and(request.status.eq(RequestStatus.CONFIRMED)))
                         .where(event.id.eq(id))
                         .groupBy(
                                 event.id, // нужен только .groupBy(event.id), но для postgres обязательно все поля перечислять из select
@@ -162,7 +164,7 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                 ))
                 .from(event)
                 .leftJoin(request).on(
-                        request.event.eq(event)
+                        request.eventId.eq(event.id)
                                 .and(request.status.eq(RequestStatus.CONFIRMED))
                 )
                 .where(predicate)

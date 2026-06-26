@@ -2,8 +2,7 @@ package ru.practicum.eventsService.event.dto.paramDto;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import ru.practicum.ewm.event.dto.paramDto.DateRangeValidatable;
-import ru.practicum.ewm.event.dto.paramDto.ValidDateRange;
+
 
 import java.time.LocalDateTime;
 

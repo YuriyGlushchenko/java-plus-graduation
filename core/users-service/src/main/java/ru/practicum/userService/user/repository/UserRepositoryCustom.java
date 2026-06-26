@@ -1,7 +1,8 @@
 package ru.practicum.userService.user.repository;
 
 
-import ru.practicum.userService.user.dto.UserDto;
+
+import ru.practicum.common.dto.users.UserDto;
 
 import java.util.List;
 

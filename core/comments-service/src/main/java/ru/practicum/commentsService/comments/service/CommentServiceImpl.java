@@ -5,16 +5,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.ewm.comments.model.Comment;
-import ru.practicum.ewm.comments.model.CommentStatus;
-import ru.practicum.ewm.comments.repository.CommentRepository;
-import ru.practicum.ewm.event.model.Event;
-import ru.practicum.ewm.event.model.EventState;
-import ru.practicum.ewm.event.repository.EventRepository;
-import ru.practicum.ewm.exceptions.exceptions.ConditionsNotMetException;
-import ru.practicum.ewm.exceptions.exceptions.NotFoundException;
-import ru.practicum.ewm.user.model.User;
-import ru.practicum.ewm.user.repository.UserRepository;
+import ru.practicum.commentsService.comments.dto.CommentMapper;
+import ru.practicum.commentsService.comments.dto.NewCommentDto;
+import ru.practicum.commentsService.comments.dto.UpdateCommentAdminRequest;
+import ru.practicum.commentsService.comments.dto.UpdateCommentUserRequest;
+import ru.practicum.commentsService.comments.model.Comment;
+import ru.practicum.commentsService.comments.model.CommentStatus;
+import ru.practicum.commentsService.comments.repository.CommentRepository;
+import ru.practicum.common.dto.comments.CommentFullDto;
+import ru.practicum.common.dto.comments.CommentShortDto;
+import ru.practicum.common.exceptions.exceptions.ConditionsNotMetException;
+import ru.practicum.common.exceptions.exceptions.NotFoundException;
+import ru.practicum.userService.user.model.User;
+import ru.practicum.userService.user.repository.UserRepository;
+
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,7 +32,7 @@ public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
-    private final EventRepository eventRepository;
+//    private final EventRepository eventRepository;
 
     @Override
     public List<CommentShortDto> getEventComments(Long eventId, int from, int size) {
@@ -52,14 +56,17 @@ public class CommentServiceImpl implements CommentService {
     public CommentFullDto createComment(Long userId, Long eventId, NewCommentDto dto) {
         User author = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found"));
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " not found"));
 
-        if (event.getState() != EventState.PUBLISHED) {
-            throw new ConditionsNotMetException("Cannot comment on unpublished event");
-        }
+        // todo переписать на вызов feign
+//        Event event = eventRepository.findById(eventId)
+//                .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " not found"));
+//
+//        if (event.getState() != EventState.PUBLISHED) {
+//            throw new ConditionsNotMetException("Cannot comment on unpublished event");
+//        }
+        Long eventIdTemp = -1L;
 
-        Comment comment = CommentMapper.toComment(dto, author, event);
+        Comment comment = CommentMapper.toComment(dto, author, eventId);
         comment = commentRepository.save(comment);
         return CommentMapper.toFullDto(comment);
     }

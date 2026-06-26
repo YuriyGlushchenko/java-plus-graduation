@@ -3,7 +3,6 @@ package ru.practicum.requestsService.request.model;
 import jakarta.persistence.*;
 import lombok.*;
 import ru.practicum.common.dto.participationRequest.RequestStatus;
-import ru.practicum.eventsService.event.model.Event;
 import ru.practicum.userService.user.model.User;
 
 
@@ -27,9 +26,13 @@ public class ParticipationRequest {
     @Column(nullable = false)
     private LocalDateTime created;
 
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "event_id", nullable = false)
+//    private Event event;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id", nullable = false)
-    private Event event;
+    private Long eventId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "requester_id", nullable = false)

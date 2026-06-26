@@ -1,8 +1,9 @@
 package ru.practicum.commentsService.comments.model;
 
-import ru.practicum.ewm.comments.model.CommentStatus;
-import ru.practicum.ewm.event.model.Event;
-import ru.practicum.ewm.user.model.User;
+import jakarta.persistence.*;
+import lombok.*;
+import ru.practicum.userService.user.model.User;
+
 
 import java.time.LocalDateTime;
 
@@ -25,9 +26,12 @@ public class Comment {
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "event_id", nullable = false)
-    private Event event;
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "event_id", nullable = false)
+//    private Event event;
+
+    @Column(name = "event_id", nullable = false)
+    private Long eventId;
 
     @Column(nullable = false)
     private LocalDateTime created;

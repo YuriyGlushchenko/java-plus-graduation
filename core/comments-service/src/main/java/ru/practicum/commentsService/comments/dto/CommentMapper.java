@@ -1,11 +1,13 @@
 package ru.practicum.commentsService.comments.dto;
 
 import lombok.RequiredArgsConstructor;
-import ru.practicum.ewm.comments.model.Comment;
-import ru.practicum.ewm.comments.model.CommentStatus;
-import ru.practicum.ewm.event.model.Event;
-import ru.practicum.ewm.user.dto.UserMapper;
-import ru.practicum.ewm.user.model.User;
+import ru.practicum.commentsService.comments.model.Comment;
+import ru.practicum.commentsService.comments.model.CommentStatus;
+import ru.practicum.common.dto.comments.CommentFullDto;
+import ru.practicum.common.dto.comments.CommentShortDto;
+import ru.practicum.userService.user.dto.UserMapper;
+import ru.practicum.userService.user.model.User;
+
 
 import java.time.LocalDateTime;
 
@@ -13,11 +15,11 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class CommentMapper {
 
-    public static Comment toComment(NewCommentDto dto, User author, Event event) {
+    public static Comment toComment(NewCommentDto dto, User author, Long event) {
         return Comment.builder()
                 .text(dto.getText())
                 .author(author)
-                .event(event)
+                .eventId(event)
                 .created(LocalDateTime.now())
                 .status(CommentStatus.PENDING)
                 .build();
@@ -59,7 +61,7 @@ public class CommentMapper {
                 .id(comment.getId())
                 .text(comment.getText())
                 .author(UserMapper.toUserShortDto(comment.getAuthor()))
-                .eventId(comment.getEvent().getId())
+                .eventId(comment.getEventId())
                 .created(comment.getCreated())
                 .updated(comment.getUpdated())
                 .status(comment.getStatus().name());
@@ -77,7 +79,7 @@ public class CommentMapper {
                 .id(comment.getId())
                 .text(comment.getText())
                 .author(UserMapper.toUserShortDto(comment.getAuthor()))
-                .eventId(comment.getEvent().getId())
+                .eventId(comment.getEventId())
                 .created(comment.getCreated())
                 .build();
     }
