@@ -2,12 +2,12 @@ package ru.practicum.eventsService.event.service;
 
 
 
+import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateRequest;
+import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateResult;
+import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;
 import ru.practicum.eventsService.event.dto.*;
 import ru.practicum.eventsService.event.dto.paramDto.AdminUserEventParam;
 import ru.practicum.eventsService.event.dto.paramDto.PublicUserEventParam;
-import ru.practicum.requestsService.request.dto.EventRequestStatusUpdateRequest;
-import ru.practicum.requestsService.request.dto.EventRequestStatusUpdateResult;
-import ru.practicum.requestsService.request.dto.ParticipationRequestDto;
 
 import java.util.Collection;
 import java.util.List;

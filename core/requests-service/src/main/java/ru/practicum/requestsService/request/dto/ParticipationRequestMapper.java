@@ -2,9 +2,11 @@ package ru.practicum.requestsService.request.dto;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateResult;
+import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;
+import ru.practicum.common.dto.participationRequest.RequestStatus;
 import ru.practicum.eventsService.event.model.Event;
 import ru.practicum.requestsService.request.model.ParticipationRequest;
-import ru.practicum.requestsService.request.model.RequestStatus;
 import ru.practicum.userService.user.model.User;
 
 

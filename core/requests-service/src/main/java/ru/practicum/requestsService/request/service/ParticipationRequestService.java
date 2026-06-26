@@ -2,7 +2,7 @@ package ru.practicum.requestsService.request.service;
 
 
 
-import ru.practicum.requestsService.request.dto.ParticipationRequestDto;
+import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;
 
 import java.util.List;
 

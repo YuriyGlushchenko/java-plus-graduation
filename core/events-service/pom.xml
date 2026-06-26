@@ -25,9 +25,15 @@
             <version>${project.version}</version>
         </dependency>
 
+<!--        <dependency>-->
+<!--            <groupId>ru.practicum</groupId>-->
+<!--            <artifactId>requests-service</artifactId>-->
+<!--            <version>${project.version}</version>-->
+<!--        </dependency>-->
+
         <dependency>
             <groupId>ru.practicum</groupId>
-            <artifactId>requests-service</artifactId>
+            <artifactId>common</artifactId>
             <version>${project.version}</version>
         </dependency>
 

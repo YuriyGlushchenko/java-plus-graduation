@@ -2,6 +2,7 @@ package ru.practicum.requestsService.request.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import ru.practicum.common.dto.participationRequest.RequestStatus;
 import ru.practicum.eventsService.event.model.Event;
 import ru.practicum.userService.user.model.User;
 

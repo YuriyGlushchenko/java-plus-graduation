@@ -7,6 +7,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import ru.practicum.commentsService.comments.model.CommentStatus;
 import ru.practicum.commentsService.comments.repository.CommentRepository;
+import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateRequest;
+import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateResult;
+import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;
+import ru.practicum.common.dto.participationRequest.RequestStatus;
 import ru.practicum.eventsService.categories.model.Category;
 import ru.practicum.eventsService.categories.repository.CategoryRepository;
 import ru.practicum.eventsService.event.dto.*;
@@ -19,13 +23,6 @@ import ru.practicum.eventsService.event.model.EventState;
 import ru.practicum.eventsService.event.repository.EventRepository;
 import ru.practicum.eventsService.exceptions.exceptions.ConditionsNotMetException;
 import ru.practicum.eventsService.exceptions.exceptions.NotFoundException;
-import ru.practicum.requestsService.request.dto.EventRequestStatusUpdateRequest;
-import ru.practicum.requestsService.request.dto.EventRequestStatusUpdateResult;
-import ru.practicum.requestsService.request.dto.ParticipationRequestDto;
-import ru.practicum.requestsService.request.dto.ParticipationRequestMapper;
-import ru.practicum.requestsService.request.model.ParticipationRequest;
-import ru.practicum.requestsService.request.model.RequestStatus;
-import ru.practicum.requestsService.request.repository.ParticipationRequestRepository;
 import ru.practicum.stat.client.StatsClient;
 import ru.practicum.stat.dto.EndpointHitDto;
 import ru.practicum.stat.dto.ParamDto;
@@ -50,7 +47,7 @@ public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
-    private final ParticipationRequestRepository requestRepository;
+//    private final ParticipationRequestRepository requestRepository; // todo меняем на вызов Feign Client к requests-service
     private final StatsClient statsClient;
     private final CommentRepository commentRepository;
 
@@ -206,12 +203,15 @@ public class EventServiceImpl implements EventService {
         Map<Long, Long> hits = fetchViews(uris, event.getEventDate());
         Long views = hits.getOrDefault(event.getId(), 0L);
 
-        long confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
+        // todo меняем на вызов Feign Client к requests-service
+//        long confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
 
-        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmedRequests, views);
-        enrichEventsListWithCommentsCount(List.of(eventFullDto));
+//        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmedRequests, views);
+//        enrichEventsListWithCommentsCount(List.of(eventFullDto));
 
-        return eventFullDto;
+//        return eventFullDto;
+
+        return null;
     }
 
 
@@ -265,12 +265,15 @@ public class EventServiceImpl implements EventService {
         Map<Long, Long> hits = fetchViews(uris, event.getEventDate());
         Long views = hits.getOrDefault(event.getId(), 0L);
 
-        long confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
 
-        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmedRequests, views);
-        enrichEventsListWithCommentsCount(List.of(eventFullDto));
+        // todo меняем на вызов Feign Client к requests-service
+//        long confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
 
-        return eventFullDto;
+//        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmedRequests, views);
+//        enrichEventsListWithCommentsCount(List.of(eventFullDto));
+
+//        return eventFullDto;
+        return null;
     }
 
     public EventFullDto findEventById(String uri, String ip, Long id) {
@@ -298,9 +301,12 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Event with id=" + eventId + " not found for user with id=" + userId);
         }
 
-        List<ParticipationRequest> requests = requestRepository.findByEventId(eventId);
+        // todo меняем на вызов Feign Client к requests-service
 
-        return ParticipationRequestMapper.toParticipationRequestDto(requests);
+//        List<ParticipationRequest> requests = requestRepository.findByEventId(eventId);
+//
+//        return ParticipationRequestMapper.toParticipationRequestDto(requests);
+        return null;
 
     }
 
@@ -314,54 +320,57 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Event with id=" + eventId + " not found for user with id=" + userId);
         }
 
-        List<ParticipationRequest> requests = requestRepository.findByIdIn(updateRequest.getRequestIds());
+        // todo меняем на вызов Feign Client к requests-service
 
-        // В ТЗ: "статус можно изменить только у заявок, находящихся в состоянии ожидания"
-        for (ParticipationRequest r : requests) {
-            if (!r.getStatus().equals(RequestStatus.PENDING)) {
-                throw new ConditionsNotMetException("Only requests with PENDING status can be reviewed");
-            }
-            if (!r.getEvent().getId().equals(eventId)) {
-                throw new ConditionsNotMetException("The requests are not related to event with id = " + eventId);
-            }
-        }
-
-        // "если для события лимит заявок равен 0 или отключена пре-модерация заявок, то подтверждение заявок не требуется"
-        // т.е. такие случаи сюда не попадают вообще? или автоматом ставить CONFIRMED? или как это понимать?
-
-        List<ParticipationRequest> approved = new ArrayList<>();
-        List<ParticipationRequest> rejected = new ArrayList<>();
-
-        long confirmedRequests = 0L;
-        long limit = event.getParticipantLimit();
-
-        if ((!event.getRequestModeration() || event.getParticipantLimit() == 0)
-                && updateRequest.getStatus().equals(RequestStatus.CONFIRMED)) {
-            approved = requests;
-        } else if (updateRequest.getStatus().equals(RequestStatus.REJECTED)) {
-            rejected = requests;
-        } else {
-            confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
-
-            for (ParticipationRequest r : requests) {
-                if (confirmedRequests < limit) {
-                    approved.add(r);
-                    confirmedRequests++;
-                } else {
-                    rejected.add(r);
-                }
-            }
-        }
-
-        updateStatuses(approved, RequestStatus.CONFIRMED);
-        updateStatuses(rejected, RequestStatus.REJECTED);
-
-        // "если при подтверждении данной заявки, лимит заявок для события исчерпан, то все неподтверждённые заявки необходимо отклонить"
-        if (limit > 0 && confirmedRequests >= limit) {
-            requestRepository.updateStatusByEventId(eventId, RequestStatus.PENDING, RequestStatus.REJECTED);
-        }
-
-        return ParticipationRequestMapper.toEventRequestStatusUpdateResult(approved, rejected);
+//        List<ParticipationRequest> requests = requestRepository.findByIdIn(updateRequest.getRequestIds());
+//
+//        // В ТЗ: "статус можно изменить только у заявок, находящихся в состоянии ожидания"
+//        for (ParticipationRequest r : requests) {
+//            if (!r.getStatus().equals(RequestStatus.PENDING)) {
+//                throw new ConditionsNotMetException("Only requests with PENDING status can be reviewed");
+//            }
+//            if (!r.getEvent().getId().equals(eventId)) {
+//                throw new ConditionsNotMetException("The requests are not related to event with id = " + eventId);
+//            }
+//        }
+//
+//        // "если для события лимит заявок равен 0 или отключена пре-модерация заявок, то подтверждение заявок не требуется"
+//        // т.е. такие случаи сюда не попадают вообще? или автоматом ставить CONFIRMED? или как это понимать?
+//
+//        List<ParticipationRequest> approved = new ArrayList<>();
+//        List<ParticipationRequest> rejected = new ArrayList<>();
+//
+//        long confirmedRequests = 0L;
+//        long limit = event.getParticipantLimit();
+//
+//        if ((!event.getRequestModeration() || event.getParticipantLimit() == 0)
+//                && updateRequest.getStatus().equals(RequestStatus.CONFIRMED)) {
+//            approved = requests;
+//        } else if (updateRequest.getStatus().equals(RequestStatus.REJECTED)) {
+//            rejected = requests;
+//        } else {
+//            confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
+//
+//            for (ParticipationRequest r : requests) {
+//                if (confirmedRequests < limit) {
+//                    approved.add(r);
+//                    confirmedRequests++;
+//                } else {
+//                    rejected.add(r);
+//                }
+//            }
+//        }
+//
+//        updateStatuses(approved, RequestStatus.CONFIRMED);
+//        updateStatuses(rejected, RequestStatus.REJECTED);
+//
+//        // "если при подтверждении данной заявки, лимит заявок для события исчерпан, то все неподтверждённые заявки необходимо отклонить"
+//        if (limit > 0 && confirmedRequests >= limit) {
+//            requestRepository.updateStatusByEventId(eventId, RequestStatus.PENDING, RequestStatus.REJECTED);
+//        }
+//
+//        return ParticipationRequestMapper.toEventRequestStatusUpdateResult(approved, rejected);
+        return null;
     }
 
     @Override
@@ -382,21 +391,23 @@ public class EventServiceImpl implements EventService {
         return dtos;
     }
 
-    private void updateStatuses(List<ParticipationRequest> requests, RequestStatus status) {
-        if (requests.isEmpty()) {
-            return;
-        }
-        List<Long> ids = requests.stream()
-                .map(ParticipationRequest::getId)
-                .collect(Collectors.toList());
-        int updated = requestRepository.updateStatusByIdIn(ids, status);
-        if (updated != ids.size()) {
-            throw new IllegalStateException(String.format(
-                    "Failed to update all requests in the database. Total: %d, updated: %d",
-                    ids.size(), updated));
-        }
-        requests.forEach(r -> r.setStatus(status));
-    }
+
+    // todo меняем на вызов Feign Client к requests-service
+//    private void updateStatuses(List<ParticipationRequest> requests, RequestStatus status) {
+//        if (requests.isEmpty()) {
+//            return;
+//        }
+//        List<Long> ids = requests.stream()
+//                .map(ParticipationRequest::getId)
+//                .collect(Collectors.toList());
+//        int updated = requestRepository.updateStatusByIdIn(ids, status);
+//        if (updated != ids.size()) {
+//            throw new IllegalStateException(String.format(
+//                    "Failed to update all requests in the database. Total: %d, updated: %d",
+//                    ids.size(), updated));
+//        }
+//        requests.forEach(r -> r.setStatus(status));
+//    }
 
 
     private <T extends Viewable> void enrichEventsWithViews(List<T> events) {

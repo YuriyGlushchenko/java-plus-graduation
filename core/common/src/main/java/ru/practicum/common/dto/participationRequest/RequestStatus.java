@@ -1,4 +1,4 @@
-package ru.practicum.requestsService.request.model;
+package ru.practicum.common.dto.participationRequest;
 
 public enum RequestStatus {
     PENDING,

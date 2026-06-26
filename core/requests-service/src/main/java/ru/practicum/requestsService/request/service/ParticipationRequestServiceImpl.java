@@ -3,15 +3,14 @@ package ru.practicum.requestsService.request.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.practicum.eventsService.event.model.Event;
-import ru.practicum.eventsService.event.model.EventState;
-import ru.practicum.eventsService.event.repository.EventRepository;
-import ru.practicum.eventsService.exceptions.exceptions.ConditionsNotMetException;
-import ru.practicum.eventsService.exceptions.exceptions.NotFoundException;
-import ru.practicum.requestsService.request.dto.ParticipationRequestDto;
+import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;
+import ru.practicum.common.dto.participationRequest.RequestStatus;
+
+
+import ru.practicum.common.exceptions.exceptions.ConditionsNotMetException;
+import ru.practicum.common.exceptions.exceptions.NotFoundException;
 import ru.practicum.requestsService.request.dto.ParticipationRequestMapper;
 import ru.practicum.requestsService.request.model.ParticipationRequest;
-import ru.practicum.requestsService.request.model.RequestStatus;
 import ru.practicum.requestsService.request.repository.ParticipationRequestRepository;
 import ru.practicum.userService.user.model.User;
 import ru.practicum.userService.user.repository.UserRepository;
@@ -24,10 +23,9 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ParticipationRequestServiceImpl implements ParticipationRequestService {
-    private final EventRepository eventRepository;
+//    private final EventRepository eventRepository;
     private final ParticipationRequestRepository requestRepository;
     private final UserRepository userRepository;
-    private final ParticipationRequestMapper requestMapper;
 
 
     @Override
@@ -40,31 +38,35 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " was not found"));
 
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
+        // toDo меняем на вызов через Feign Client в микросервис событий
 
-        if (event.getInitiator().getId().equals(userId)) {
-            throw new ConditionsNotMetException("Initiator can`t add request to his own event");
-        }
+//        Event event = eventRepository.findById(eventId)
+//                .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
+//
+//        if (event.getInitiator().getId().equals(userId)) {
+//            throw new ConditionsNotMetException("Initiator can`t add request to his own event");
+//        }
+//
+//        if (!event.getState().equals(EventState.PUBLISHED)) {
+//            throw new ConditionsNotMetException("Impossible to add request to not published event");
+//        }
+//
+//        if (event.getParticipantLimit() != 0) {
+//            long participants = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
+//            if (participants >= event.getParticipantLimit()) {
+//                throw new ConditionsNotMetException("The limit of participation requests has been reached: " + participants);
+//            }
+//        }
+//
+//        ParticipationRequest request = ParticipationRequestMapper.toParticipationRequest(event, user);
+//        if (event.getParticipantLimit() == 0 || !event.getRequestModeration()) {
+//            request.setStatus(RequestStatus.CONFIRMED);
+//        }
+//        request = requestRepository.save(request);
 
-        if (!event.getState().equals(EventState.PUBLISHED)) {
-            throw new ConditionsNotMetException("Impossible to add request to not published event");
-        }
+//        return ParticipationRequestMapper.toParticipationRequestDto(request);
 
-        if (event.getParticipantLimit() != 0) {
-            long participants = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
-            if (participants >= event.getParticipantLimit()) {
-                throw new ConditionsNotMetException("The limit of participation requests has been reached: " + participants);
-            }
-        }
-
-        ParticipationRequest request = requestMapper.toParticipationRequest(event, user);
-        if (event.getParticipantLimit() == 0 || !event.getRequestModeration()) {
-            request.setStatus(RequestStatus.CONFIRMED);
-        }
-        request = requestRepository.save(request);
-
-        return requestMapper.toParticipationRequestDto(request);
+        return null;
     }
 
     @Override
@@ -75,7 +77,7 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
             return List.of();
         }
 
-        return requestMapper.toParticipationRequestDto(requests);
+        return ParticipationRequestMapper.toParticipationRequestDto(requests);
     }
 
     @Override
@@ -97,6 +99,6 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
 
         request = requestRepository.save(request);
 
-        return requestMapper.toParticipationRequestDto(request);
+        return ParticipationRequestMapper.toParticipationRequestDto(request);
     }
 }
