@@ -32,8 +32,6 @@ import ru.practicum.stat.client.StatsClient;
 import ru.practicum.stat.dto.EndpointHitDto;
 import ru.practicum.stat.dto.ParamDto;
 import ru.practicum.stat.dto.ViewStatsDto;
-import ru.practicum.userService.user.repository.UserRepository;
-
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -56,7 +54,7 @@ public class EventServiceImpl implements EventService {
         // "дата и время на которые намечено событие не может быть раньше, чем через два часа от текущего момента"
         LocalDateTime minEventDate = LocalDateTime.now().plusHours(2);
         if (newEventDto.getEventDate().isBefore(minEventDate)) {
-            throw new ConditionsNotMetException("Unable to update event at last 2 hours before event date");
+            throw new ConditionsNotMetException("Event date must be at least 2 hours from now");
         }
 
         // раз по условию пользователь аутентифицирован и авторизован, значит он точно есть
@@ -64,11 +62,16 @@ public class EventServiceImpl implements EventService {
 
         try {
             userDto = userClient.getUserShortById(userId);
+
+            if (userDto == null) {
+                throw new NotFoundException("User with id=" + userId + " not found");
+            }
         } catch (FeignException e) {
             if (e.status() == 404) {
                 throw new NotFoundException("Event with id=" + userId + " was not found");
             } else {
-                System.out.println("Feign error: " + e.status());
+                log.error("User service unavailable: status={}, error={}", e.status(), e.getMessage());
+                throw new RuntimeException("User service is currently unavailable", e);
             }
         }
 
@@ -305,7 +308,7 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
 
-        if (!event.getInitiator().getId().equals(userId)) {
+        if (!event.getInitiatorId().equals(userId)) {
             throw new NotFoundException("Event with id=" + eventId + " not found for user with id=" + userId);
         }
 
@@ -324,7 +327,7 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
 
-        if (!event.getInitiator().getId().equals(userId)) {
+        if (!event.getInitiatorId().equals(userId)) {
             throw new NotFoundException("Event with id=" + eventId + " not found for user with id=" + userId);
         }
 

@@ -8,6 +8,7 @@ import ru.practicum.common.dto.participationRequest.RequestStatus;
 import ru.practicum.requestsService.request.model.ParticipationRequest;
 
 
+import java.util.Collection;
 import java.util.List;
 
 public interface ParticipationRequestRepository extends JpaRepository<ParticipationRequest, Long> {
@@ -32,6 +33,14 @@ public interface ParticipationRequestRepository extends JpaRepository<Participat
             @Param("eventId") Long eventId,
             @Param("oldStatus") RequestStatus oldStatus,
             @Param("newStatus") RequestStatus newStatus
+    );
+
+    @Query("SELECT r.eventId, COUNT(r) FROM ParticipationRequest r " +
+            "WHERE r.eventId IN :eventIds AND r.status = :status " +
+            "GROUP BY r.eventId")
+    List<Object[]> countByEventIdInAndStatus(
+            @Param("eventIds") Collection<Long> eventIds,
+            @Param("status") RequestStatus status
     );
 
 }

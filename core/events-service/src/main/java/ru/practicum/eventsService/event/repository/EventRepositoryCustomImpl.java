@@ -1,21 +1,19 @@
 package ru.practicum.eventsService.event.repository;
 
-
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
-import ru.practicum.common.dto.participationRequest.RequestStatus;
-import ru.practicum.common.dto.events.category.CategoryDto;
 import ru.practicum.common.dto.events.EventFullDto;
 import ru.practicum.common.dto.events.EventShortDto;
-import ru.practicum.eventsService.event.dto.paramDto.EventRepositoryParam;
+import ru.practicum.common.dto.events.category.CategoryDto;
 import ru.practicum.common.dto.events.EventState;
 import ru.practicum.common.dto.users.UserShortDto;
+import ru.practicum.eventsService.event.dto.paramDto.EventRepositoryParam;
 import ru.practicum.eventsService.event.model.QEvent;
-import ru.practicum.requestsService.request.model.QParticipationRequest;
+
 
 
 import java.time.LocalDateTime;
@@ -27,7 +25,6 @@ import java.util.Optional;
 public class EventRepositoryCustomImpl implements EventRepositoryCustom {
     private final JPAQueryFactory queryFactory;
     private final QEvent event = QEvent.event;
-    private final QParticipationRequest request = QParticipationRequest.participationRequest;
 
     @Override
     public List<EventShortDto> findEventsShortDto(EventRepositoryParam param) {
@@ -40,7 +37,7 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                         event.id,
                         event.annotation,
                         Projections.constructor(CategoryDto.class, event.category.id, event.category.name), // проекция в DTO
-                        request.count().as("confirmedRequests"),
+                        Expressions.asNumber(0L).as("confirmedRequests"), // confirmedRequests заполняется в сервисе через Feign Client.
                         event.eventDate,
                         Projections.constructor(UserShortDto.class, event.initiator.id, event.initiator.name), // проекция в DTO
                         event.paid,
@@ -50,13 +47,9 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                         Expressions.asNumber(0L).as("commentsCount")
                 ))
                 .from(event)
-                .leftJoin(request).on(
-                        request.eventId.eq(event.id)
-                                .and(request.status.eq(RequestStatus.CONFIRMED))
-                )
                 .where(predicate)
                 .groupBy(
-                        event.id, // нужен только .groupBy(event.id), но для postgres обязательно все поля перечислять из select
+                        event.id, // нужен только .groupBy(event.id), но для postgres обязательно перечислять в groupBy все поля из select
                         event.category.id,
                         event.category.name,
                         event.initiator.id,
@@ -66,12 +59,12 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                 );
 
         // добавляем фильтрацию в запрос, если требуются только доступные события
-        if (param.isOnlyAvailable()) {
-            query.having(
-                    event.participantLimit.eq(0)
-                            .or(request.count().lt(event.participantLimit))
-            );
-        }
+        // if (param.isOnlyAvailable()) {
+        //     query.having(
+        //             event.participantLimit.eq(0)
+        //                     .or(request.count().lt(event.participantLimit))
+        //     );
+        // }
 
         return query
                 .orderBy(event.eventDate.asc()) // сортируем сразу по дате, если нужна по views, то потом в сервисе переделываем
@@ -94,7 +87,7 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                                         event.category.id,
                                         event.category.name
                                 ),
-                                request.count().as("confirmedRequests"),
+                                Expressions.asNumber(0L).as("confirmedRequests"), // confirmedRequests заполняется в сервисе через Feign Client.
                                 event.createdOn,
                                 event.description,
                                 event.eventDate,
@@ -111,10 +104,9 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                                 Expressions.asNumber(0L).as("commentsCount")
                         ))
                         .from(event)
-                        .leftJoin(request).on(request.eventId.eq(event.id).and(request.status.eq(RequestStatus.CONFIRMED)))
                         .where(event.id.eq(id))
                         .groupBy(
-                                event.id, // нужен только .groupBy(event.id), но для postgres обязательно все поля перечислять из select
+                                event.id, // нужен только .groupBy(event.id), но для postgres обязательно перечислять в groupBy все поля из select
                                 event.category.id,
                                 event.category.name,
                                 event.initiator.id,
@@ -144,7 +136,7 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                                 event.category.id,
                                 event.category.name
                         ),
-                        request.count().as("confirmedRequests"),
+                        Expressions.asNumber(0L).as("confirmedRequests"), // confirmedRequests заполняется в сервисе через Feign Client.
                         event.createdOn,
                         event.description,
                         event.eventDate,
@@ -163,13 +155,9 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                         Expressions.asNumber(0L).as("commentsCount")
                 ))
                 .from(event)
-                .leftJoin(request).on(
-                        request.eventId.eq(event.id)
-                                .and(request.status.eq(RequestStatus.CONFIRMED))
-                )
                 .where(predicate)
                 .groupBy(
-                        event.id, // нужен только .groupBy(event.id), но для postgres обязательно все поля перечислять из select
+                        event.id, // нужен только .groupBy(event.id), но для postgres обязательно перечислять в groupBy все поля из select
                         event.category.id,
                         event.category.name,
                         event.initiator.id,
@@ -183,12 +171,12 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                         event.title
                 );
 
-        if (param.isOnlyAvailable()) {
-            query.having(
-                    event.participantLimit.eq(0)
-                            .or(request.count().lt(event.participantLimit))
-            );
-        }
+        // if (param.isOnlyAvailable()) {
+        //     query.having(
+        //             event.participantLimit.eq(0)
+        //                     .or(request.count().lt(event.participantLimit))
+        //     );
+        // }
 
         return query
                 .orderBy(event.eventDate.asc())

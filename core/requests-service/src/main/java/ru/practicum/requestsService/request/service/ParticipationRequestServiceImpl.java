@@ -3,6 +3,9 @@ package ru.practicum.requestsService.request.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateRequest;
+import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateResult;
 import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;
 import ru.practicum.common.dto.participationRequest.RequestStatus;
 
@@ -16,7 +19,10 @@ import ru.practicum.userService.user.model.User;
 import ru.practicum.userService.user.repository.UserRepository;
 
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -100,5 +106,107 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
         request = requestRepository.save(request);
 
         return ParticipationRequestMapper.toParticipationRequestDto(request);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    @Override
+    public long getConfirmedRequestsCount(Long eventId) {
+        return requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
+    }
+
+    @Override
+    public List<ParticipationRequestDto> getRequestsByEventId(Long eventId) {
+        List<ParticipationRequest> requests = requestRepository.findByEventId(eventId);
+        return ParticipationRequestMapper.toParticipationRequestDto(requests);
+    }
+
+    @Override
+    @Transactional
+    public EventRequestStatusUpdateResult updateRequestStatuses(Long eventId, EventRequestStatusUpdateRequest updateRequest) {
+        // Проверяем, что заявки существуют
+        List<ParticipationRequest> requests = requestRepository.findByIdIn(updateRequest.getRequestIds());
+
+        if (requests.isEmpty()) {
+            throw new NotFoundException("Requests not found for ids: " + updateRequest.getRequestIds());
+        }
+
+        // Проверяем, что все заявки относятся к данному событию
+        for (ParticipationRequest r : requests) {
+            if (!r.getEventId().equals(eventId)) {
+                throw new ConditionsNotMetException("Request with id=" + r.getId() + " is not related to event=" + eventId);
+            }
+            if (!r.getStatus().equals(RequestStatus.PENDING)) {
+                throw new ConditionsNotMetException("Only PENDING requests can be reviewed");
+            }
+        }
+
+        List<ParticipationRequest> approved = new ArrayList<>();
+        List<ParticipationRequest> rejected = new ArrayList<>();
+
+        // Получаем текущее количество подтвержденных заявок
+        long confirmedCount = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
+
+        // Получаем лимит (для этого нужен вызов к events-service, но пока не реализовано)
+        // Временно используем большой лимит, пока не реализуем
+        long limit = 1000; // TODO: получить лимит из events-service
+
+        if (updateRequest.getStatus().equals(RequestStatus.CONFIRMED)) {
+            for (ParticipationRequest r : requests) {
+                if (confirmedCount < limit) {
+                    approved.add(r);
+                    confirmedCount++;
+                } else {
+                    rejected.add(r);
+                }
+            }
+        } else {
+            rejected.addAll(requests);
+        }
+
+        // Обновляем статусы в БД
+        updateStatuses(approved, RequestStatus.CONFIRMED);
+        updateStatuses(rejected, RequestStatus.REJECTED);
+
+        // Если лимит исчерпан, отклоняем все остальные PENDING заявки
+        if (limit > 0 && confirmedCount >= limit) {
+            requestRepository.updateStatusByEventId(eventId, RequestStatus.PENDING, RequestStatus.REJECTED);
+        }
+
+        return ParticipationRequestMapper.toEventRequestStatusUpdateResult(approved, rejected);
+    }
+
+    @Override
+    public Map<Long, Long> getConfirmedRequestsCounts(List<Long> eventIds) {
+        if (eventIds == null || eventIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Object[]> counts = requestRepository.countByEventIdInAndStatus(eventIds, RequestStatus.CONFIRMED);
+        return counts.stream()
+                .collect(Collectors.toMap(
+                        arr -> (Long) arr[0],
+                        arr -> (Long) arr[1]
+                ));
+    }
+
+    private void updateStatuses(List<ParticipationRequest> requests, RequestStatus status) {
+        if (requests.isEmpty()) {
+            return;
+        }
+        List<Long> ids = requests.stream()
+                .map(ParticipationRequest::getId)
+                .collect(Collectors.toList());
+        requestRepository.updateStatusByIdIn(ids, status);
+        requests.forEach(r -> r.setStatus(status));
     }
 }
