@@ -10,7 +10,7 @@ import ru.practicum.eventsService.compilation.dto.NewCompilationDto;
 import ru.practicum.eventsService.compilation.dto.UpdateCompilationRequest;
 import ru.practicum.eventsService.compilation.model.Compilation;
 import ru.practicum.eventsService.compilation.repository.CompilationRepository;
-import ru.practicum.eventsService.event.dto.EventShortDto;
+import ru.practicum.common.dto.events.EventShortDto;
 import ru.practicum.eventsService.event.model.Event;
 import ru.practicum.eventsService.event.service.EventService;
 

@@ -1,7 +1,7 @@
 package ru.practicum.eventsService.compilation.dto;
 
 import ru.practicum.eventsService.compilation.model.Compilation;
-import ru.practicum.eventsService.event.dto.EventShortDto;
+import ru.practicum.common.dto.events.EventShortDto;
 import ru.practicum.eventsService.event.model.Event;
 
 import java.util.ArrayList;

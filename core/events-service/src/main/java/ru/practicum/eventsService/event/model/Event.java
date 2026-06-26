@@ -2,6 +2,8 @@ package ru.practicum.eventsService.event.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import ru.practicum.common.dto.events.EventState;
+import ru.practicum.common.dto.events.Location;
 import ru.practicum.eventsService.categories.model.Category;
 import ru.practicum.userService.user.model.User;
 
@@ -49,16 +51,15 @@ public class Event {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private EventState state;
+    private EventState state; // PENDING,PUBLISHED, CANCELED
 
-    // Связи
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "initiator_id", nullable = false)
-    private User initiator;
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "initiator_id", nullable = false)
+//    private User initiator;
 
-    // Дублируем ID для будущего разделения ////////////////////////////////////////////////////////
-//    @Column(name = "initiator_id")
-//    private Long initiatorId;
+    // ID для  разделения вместо User initiator ////////////////////////////////////////////////////////
+    @Column(name = "initiator_id")
+    private Long initiatorId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)

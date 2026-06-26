@@ -1,4 +1,4 @@
-package ru.practicum.eventsService.event.dto;
+package ru.practicum.common.dto.events;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.eventsService.categories.dto.CategoryDto;
+import ru.practicum.common.dto.events.category.CategoryDto;
 import ru.practicum.common.dto.users.UserShortDto;
 
 

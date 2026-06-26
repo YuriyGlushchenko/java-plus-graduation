@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.common.dto.users.UserDto;
+import ru.practicum.common.dto.users.UserShortDto;
 import ru.practicum.userService.user.dto.NewUserRequest;
 import ru.practicum.userService.user.service.UserService;
 
@@ -20,7 +21,7 @@ import java.util.List;
 @RequestMapping("/admin/users")
 @RequiredArgsConstructor
 @Validated
-public class AdminUserController {
+public class AdminUserController implements ru.practicum.common.apiContracts.UserApiContract {
     private final UserService userService;
 
     @PostMapping
@@ -34,6 +35,7 @@ public class AdminUserController {
     }
 
 
+    @Override
     @GetMapping
     public List<UserDto> getUsers(
             @RequestParam(required = false) List<Long> ids,
@@ -45,7 +47,6 @@ public class AdminUserController {
         List<UserDto> users = userService.findUsers(ids, from, size);
         log.debug("Found {} users", users.size());
         return users;
-
     }
 
     @DeleteMapping("/{userId}")
@@ -55,6 +56,17 @@ public class AdminUserController {
 
         userService.deleteUser(userId);
         log.info("User with id={} successfully deleted", userId);
+    }
+
+    @Override
+    @GetMapping("/{userId}")
+    public UserShortDto getUserById(@PathVariable long userId) {
+        log.debug("Request to get user: id={}", userId);
+
+        UserShortDto user = userService.findUser(userId);
+
+        log.debug("Found user: id={}, name={}", user.getId(), user.getName());
+        return user;
     }
 
 

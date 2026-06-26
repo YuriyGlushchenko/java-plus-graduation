@@ -1,4 +1,4 @@
-package ru.practicum.eventsService.event.dto;
+package ru.practicum.common.dto.events;
 
 
 import java.time.LocalDateTime;

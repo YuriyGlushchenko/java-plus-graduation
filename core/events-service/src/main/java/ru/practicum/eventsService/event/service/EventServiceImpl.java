@@ -7,21 +7,25 @@ import org.springframework.transaction.annotation.Transactional;
 
 import ru.practicum.commentsService.comments.model.CommentStatus;
 import ru.practicum.commentsService.comments.repository.CommentRepository;
+import ru.practicum.common.dto.events.Commentable;
+import ru.practicum.common.dto.events.EventFullDto;
+import ru.practicum.common.dto.events.EventShortDto;
+import ru.practicum.common.dto.events.Viewable;
 import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateRequest;
 import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateResult;
 import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;
-import ru.practicum.common.dto.participationRequest.RequestStatus;
 import ru.practicum.common.exceptions.exceptions.ConditionsNotMetException;
 import ru.practicum.common.exceptions.exceptions.NotFoundException;
 import ru.practicum.eventsService.categories.model.Category;
 import ru.practicum.eventsService.categories.repository.CategoryRepository;
+import ru.practicum.eventsService.client.UserClient;
 import ru.practicum.eventsService.event.dto.*;
 import ru.practicum.eventsService.event.dto.paramDto.AdminUserEventParam;
 import ru.practicum.eventsService.event.dto.paramDto.EventRepositoryParam;
 import ru.practicum.eventsService.event.dto.paramDto.PublicUserEventParam;
 import ru.practicum.eventsService.event.model.Event;
 import ru.practicum.eventsService.event.model.EventSort;
-import ru.practicum.eventsService.event.model.EventState;
+import ru.practicum.common.dto.events.EventState;
 import ru.practicum.eventsService.event.repository.EventRepository;
 import ru.practicum.stat.client.StatsClient;
 import ru.practicum.stat.dto.EndpointHitDto;
@@ -44,6 +48,7 @@ public class EventServiceImpl implements EventService {
 //    private final ParticipationRequestRepository requestRepository; // todo меняем на вызов Feign Client к requests-service
     private final StatsClient statsClient;
     private final CommentRepository commentRepository;
+    private final UserClient userClient;
 
 
     @Transactional
@@ -65,7 +70,7 @@ public class EventServiceImpl implements EventService {
 
         event = eventRepository.save(event);
 
-        return EventMapper.toEventFullDto(event, 0L, 0L);
+        return EventMapper.toEventFullDto(event, 0L, 0L, );
     }
 
     @Override

@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.practicum.common.exceptions.exceptions.ConditionsNotMetException;
 import ru.practicum.common.exceptions.exceptions.NotFoundException;
-import ru.practicum.eventsService.categories.dto.CategoryDto;
+import ru.practicum.common.dto.events.category.CategoryDto;
 import ru.practicum.eventsService.categories.dto.CategoryMapper;
 import ru.practicum.eventsService.categories.dto.NewCategoryDto;
 import ru.practicum.eventsService.categories.model.Category;

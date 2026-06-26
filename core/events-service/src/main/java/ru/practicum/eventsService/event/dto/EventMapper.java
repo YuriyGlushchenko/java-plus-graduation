@@ -1,10 +1,13 @@
 package ru.practicum.eventsService.event.dto;
 
 import lombok.RequiredArgsConstructor;
+import ru.practicum.common.dto.events.EventFullDto;
+import ru.practicum.common.dto.events.EventShortDto;
+import ru.practicum.common.dto.users.UserShortDto;
 import ru.practicum.eventsService.categories.dto.CategoryMapper;
 import ru.practicum.eventsService.categories.model.Category;
 import ru.practicum.eventsService.event.model.Event;
-import ru.practicum.eventsService.event.model.EventState;
+import ru.practicum.common.dto.events.EventState;
 import ru.practicum.userService.user.dto.UserMapper;
 import ru.practicum.userService.user.model.User;
 
@@ -91,7 +94,7 @@ public class EventMapper {
         }
     }
 
-    public static EventFullDto toEventFullDto(Event event, Long confirmedRequests, Long views) {
+    public static EventFullDto toEventFullDto(Event event, Long confirmedRequests, Long views, UserShortDto initiator) {
         return EventFullDto.builder()
                 .id(event.getId())
                 .annotation(event.getAnnotation())
@@ -100,7 +103,7 @@ public class EventMapper {
                 .createdOn(event.getCreatedOn())
                 .description(event.getDescription())
                 .eventDate(event.getEventDate())
-                .initiator(UserMapper.toUserShortDto(event.getInitiator()))
+                .initiator(initiator)
                 .location(event.getLocation())
                 .paid(event.getPaid())
                 .participantLimit(event.getParticipantLimit())

@@ -4,22 +4,33 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import ru.practicum.common.aop.annotation.Loggable;
 import ru.practicum.common.dto.users.UserDto;
+import ru.practicum.common.dto.users.UserShortDto;
 import ru.practicum.common.exceptions.exceptions.NotFoundException;
 import ru.practicum.userService.user.dto.NewUserRequest;
 import ru.practicum.userService.user.dto.UserMapper;
 import ru.practicum.userService.user.model.User;
 import ru.practicum.userService.user.repository.UserRepository;
 
-
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+
+    @Override
+    @Loggable
+    public UserShortDto findUser(Long userId) {
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isEmpty()) {
+            throw new NotFoundException("User with id: " + userId + " not found");
+        }
+        return UserMapper.toUserShortDto(userOptional.get());
+    }
 
     @Transactional
     @Override

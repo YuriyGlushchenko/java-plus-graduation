@@ -1,4 +1,4 @@
-package ru.practicum.eventsService.categories.dto;
+package ru.practicum.common.dto.events.category;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
