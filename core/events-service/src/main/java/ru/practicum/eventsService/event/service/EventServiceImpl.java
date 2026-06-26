@@ -11,6 +11,8 @@ import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateRequ
 import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateResult;
 import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;
 import ru.practicum.common.dto.participationRequest.RequestStatus;
+import ru.practicum.common.exceptions.exceptions.ConditionsNotMetException;
+import ru.practicum.common.exceptions.exceptions.NotFoundException;
 import ru.practicum.eventsService.categories.model.Category;
 import ru.practicum.eventsService.categories.repository.CategoryRepository;
 import ru.practicum.eventsService.event.dto.*;
@@ -21,8 +23,6 @@ import ru.practicum.eventsService.event.model.Event;
 import ru.practicum.eventsService.event.model.EventSort;
 import ru.practicum.eventsService.event.model.EventState;
 import ru.practicum.eventsService.event.repository.EventRepository;
-import ru.practicum.eventsService.exceptions.exceptions.ConditionsNotMetException;
-import ru.practicum.eventsService.exceptions.exceptions.NotFoundException;
 import ru.practicum.stat.client.StatsClient;
 import ru.practicum.stat.dto.EndpointHitDto;
 import ru.practicum.stat.dto.ParamDto;
@@ -33,12 +33,6 @@ import ru.practicum.userService.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static ru.practicum.eventsService.event.model.AdminStateAction.PUBLISH_EVENT;
-import static ru.practicum.eventsService.event.model.AdminStateAction.REJECT_EVENT;
-import static ru.practicum.eventsService.event.model.UserStateAction.CANCEL_REVIEW;
-import static ru.practicum.eventsService.event.model.UserStateAction.SEND_TO_REVIEW;
-
 
 @Slf4j
 @Service

@@ -27,9 +27,11 @@ public interface ParticipationRequestRepository extends JpaRepository<Participat
     int updateStatusByIdIn(@Param("ids") List<Long> ids, @Param("status") RequestStatus status);
 
     @Modifying
-    @Query("UPDATE ParticipationRequest r SET r.status = :status WHERE r.event.id = :id AND r.status = :oldStatus")
-    int updateStatusByEventId(@Param("id") Long id,
-                              @Param("oldStatus") RequestStatus oldStatus,
-                              @Param("status") RequestStatus newStatus);
+    @Query("UPDATE ParticipationRequest r SET r.status = :newStatus WHERE r.eventId = :eventId AND r.status = :oldStatus")
+    int updateStatusByEventId(
+            @Param("eventId") Long eventId,
+            @Param("oldStatus") RequestStatus oldStatus,
+            @Param("newStatus") RequestStatus newStatus
+    );
 
 }

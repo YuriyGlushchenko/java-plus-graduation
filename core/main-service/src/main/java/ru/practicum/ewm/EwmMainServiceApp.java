@@ -7,27 +7,26 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-
 @SpringBootApplication
 @ComponentScan(basePackages = {
         "ru.practicum.ewm",
-        "ru.practicum.events",
-        "ru.practicum.requests",
-        "ru.practicum.users",
-        "ru.practicum.comments",
-        "ru.practicum.stat"         
+        "ru.practicum.eventsService",
+        "ru.practicum.requestsService",
+        "ru.practicum.userService",
+        "ru.practicum.commentsService",
+        "ru.practicum.stat"
 })
-@EntityScan({
-        "ru.practicum.events.model",
-        "ru.practicum.requests.model",
-        "ru.practicum.users.model",
-        "ru.practicum.comments.model"
+@EntityScan(basePackages = {
+        "ru.practicum.eventsService",
+        "ru.practicum.requestsService",
+        "ru.practicum.userService",
+        "ru.practicum.commentsService"
 })
-@EnableJpaRepositories({
-        "ru.practicum.events.repository",
-        "ru.practicum.requests.repository",
-        "ru.practicum.users.repository",
-        "ru.practicum.comments.repository"
+@EnableJpaRepositories(basePackages = {
+        "ru.practicum.eventsService",
+        "ru.practicum.requestsService",
+        "ru.practicum.userService",
+        "ru.practicum.commentsService"
 })
 @EnableFeignClients
 public class EwmMainServiceApp {
