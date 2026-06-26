@@ -16,5 +16,9 @@ public interface UserService {
 
     void deleteUser(Long userId);
 
-    UserShortDto findUser(Long userId);
+    UserDto findUser(Long userId);
+
+    Boolean isUserExist(Long userId);
+
+    UserShortDto findUserShort(Long userId);
 }

@@ -17,5 +17,10 @@ public interface UserApiContract {
     );
 
     @GetMapping("/{userId}")
-    UserShortDto getUserById(@PathVariable long userId);
+    UserDto getUserById(@PathVariable long userId);
+
+    @GetMapping("/{userId}")
+    UserShortDto getUserShortById(@PathVariable long userId);
+
+    Boolean isUserExist(@PathVariable long userId);
 }

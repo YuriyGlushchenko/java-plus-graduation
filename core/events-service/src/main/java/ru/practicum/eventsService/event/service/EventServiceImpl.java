@@ -1,37 +1,37 @@
 package ru.practicum.eventsService.event.service;
 
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import ru.practicum.commentsService.comments.model.CommentStatus;
 import ru.practicum.commentsService.comments.repository.CommentRepository;
-import ru.practicum.common.dto.events.Commentable;
-import ru.practicum.common.dto.events.EventFullDto;
-import ru.practicum.common.dto.events.EventShortDto;
-import ru.practicum.common.dto.events.Viewable;
+import ru.practicum.common.dto.events.*;
 import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateRequest;
 import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateResult;
 import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;
+import ru.practicum.common.dto.users.UserDto;
+import ru.practicum.common.dto.users.UserShortDto;
 import ru.practicum.common.exceptions.exceptions.ConditionsNotMetException;
 import ru.practicum.common.exceptions.exceptions.NotFoundException;
 import ru.practicum.eventsService.categories.model.Category;
 import ru.practicum.eventsService.categories.repository.CategoryRepository;
 import ru.practicum.eventsService.client.UserClient;
-import ru.practicum.eventsService.event.dto.*;
+import ru.practicum.eventsService.event.dto.EventMapper;
+import ru.practicum.eventsService.event.dto.NewEventDto;
+import ru.practicum.eventsService.event.dto.UpdateEventAdminRequest;
+import ru.practicum.eventsService.event.dto.UpdateEventUserRequest;
 import ru.practicum.eventsService.event.dto.paramDto.AdminUserEventParam;
 import ru.practicum.eventsService.event.dto.paramDto.EventRepositoryParam;
 import ru.practicum.eventsService.event.dto.paramDto.PublicUserEventParam;
 import ru.practicum.eventsService.event.model.Event;
 import ru.practicum.eventsService.event.model.EventSort;
-import ru.practicum.common.dto.events.EventState;
 import ru.practicum.eventsService.event.repository.EventRepository;
 import ru.practicum.stat.client.StatsClient;
 import ru.practicum.stat.dto.EndpointHitDto;
 import ru.practicum.stat.dto.ParamDto;
 import ru.practicum.stat.dto.ViewStatsDto;
-import ru.practicum.userService.user.model.User;
 import ru.practicum.userService.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
@@ -43,9 +43,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
-    private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
-//    private final ParticipationRequestRepository requestRepository; // todo меняем на вызов Feign Client к requests-service
+    //    private final ParticipationRequestRepository requestRepository; // todo меняем на вызов Feign Client к requests-service
     private final StatsClient statsClient;
     private final CommentRepository commentRepository;
     private final UserClient userClient;
@@ -60,17 +59,27 @@ public class EventServiceImpl implements EventService {
             throw new ConditionsNotMetException("Unable to update event at last 2 hours before event date");
         }
 
-        // или не надо проверять, раз по условию пользователь аутентифицирован и авторизован, значит точно есть?
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Event with id=" + userId + " was not found"));
+        // раз по условию пользователь аутентифицирован и авторизован, значит он точно есть
+        UserShortDto userDto = null;
+
+        try {
+            userDto = userClient.getUserShortById(userId);
+        } catch (FeignException e) {
+            if (e.status() == 404) {
+                throw new NotFoundException("Event with id=" + userId + " was not found");
+            } else {
+                System.out.println("Feign error: " + e.status());
+            }
+        }
+
 
         Category cat = categoryRepository.getCategory(newEventDto.getCategory());
 
-        Event event = EventMapper.toEvent(newEventDto, cat, user);
+        Event event = EventMapper.toEvent(newEventDto, cat, userId);
 
         event = eventRepository.save(event);
 
-        return EventMapper.toEventFullDto(event, 0L, 0L, );
+        return EventMapper.toEventFullDto(event, 0L, 0L, userDto);
     }
 
     @Override
@@ -150,7 +159,7 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
 
-        if (!event.getInitiator().getId().equals(userId)) {
+        if (!event.getInitiatorId().equals(userId)) {
             throw new NotFoundException("Event with id=" + eventId + " not found for user with id=" + userId);
         }
 

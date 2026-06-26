@@ -3,6 +3,7 @@ package ru.practicum.eventsService.event.dto;
 import lombok.RequiredArgsConstructor;
 import ru.practicum.common.dto.events.EventFullDto;
 import ru.practicum.common.dto.events.EventShortDto;
+import ru.practicum.common.dto.users.UserDto;
 import ru.practicum.common.dto.users.UserShortDto;
 import ru.practicum.eventsService.categories.dto.CategoryMapper;
 import ru.practicum.eventsService.categories.model.Category;
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class EventMapper {
 
-    public static Event toEvent(NewEventDto newEventDto, Category category, User initiator) {
+    public static Event toEvent(NewEventDto newEventDto, Category category, Long initiatorId) {
         return Event.builder()
                 .annotation(newEventDto.getAnnotation())
                 .category(category)
@@ -28,7 +29,7 @@ public class EventMapper {
                 .participantLimit(newEventDto.getParticipantLimit() != null ? newEventDto.getParticipantLimit() : 0)
                 .requestModeration(newEventDto.getRequestModeration() != null ? newEventDto.getRequestModeration() : true)
                 .title(newEventDto.getTitle())
-                .initiator(initiator)
+                .initiatorId(initiatorId)
                 .state(EventState.PENDING)
                 .createdOn(LocalDateTime.now())
                 .build();
@@ -122,7 +123,7 @@ public class EventMapper {
                 .category(CategoryMapper.toCategoryDto(event.getCategory()))
                 .confirmedRequests(confirmedRequests)
                 .eventDate(event.getEventDate())
-                .initiator(UserMapper.toUserShortDto(event.getInitiator()))
+                .initiator(UserMapper.toUserShortDto(event.getInitiatorId()))
                 .paid(event.getPaid())
                 .title(event.getTitle())
                 .views(views)
