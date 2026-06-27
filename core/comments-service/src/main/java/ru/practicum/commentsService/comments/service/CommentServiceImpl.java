@@ -24,9 +24,7 @@ import ru.practicum.common.exceptions.exceptions.ConditionsNotMetException;
 import ru.practicum.common.exceptions.exceptions.NotFoundException;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -51,79 +49,28 @@ public class CommentServiceImpl implements CommentService {
             return Collections.emptyList();
         }
 
-        // собираем id всех авторов
-        List<Long> userIds = comments.stream().map(Comment::getAuthorId).toList();
-
-        // загружаем одним запросом всех юзеров по их id
-        Map<Long, UserShortDto> userMap;
-        try {
-            userMap = userClient.getUsersShortByIds(userIds);
-            if (userMap == null) {
-                throw new NotFoundException("Comments authors not found");
-            }
-        } catch (FeignException e) {
-            if (e.status() == 404) {
-                throw new NotFoundException("Comments authors not found");
-            } else {
-                log.error("User service unavailable: status={}, error={}", e.status(), e.getMessage());
-                throw new RuntimeException("User service is currently unavailable", e);
-            }
-        }
+        Map<Long, UserShortDto> userMap = fetchUsersFromComments(comments);
 
         return comments.stream()
                 .map(comment -> {
                     UserShortDto author = userMap.get(comment.getAuthorId());
-                    UserShortDto moderator = comment.getModeratorId() != null
-                            ? userMap.get(comment.getModeratorId())
-                            : null;
-
                     return CommentMapper.toShortDto(comment, author);
                 })
                 .collect(Collectors.toList());
-
-
     }
 
     @Override
     public CommentShortDto getComment(Long commentId) {
-        Comment comment = commentRepository.findByIdAndStatus(commentId, CommentStatus.APPROVED)
-                .orElseThrow(() -> new NotFoundException("Comment with id=" + commentId + " not found or not approved"));
-        return CommentMapper.toShortDto(comment);
+        Comment comment = getCommentByIdAndStatus(commentId, CommentStatus.APPROVED);
+        UserShortDto author = getUserById(comment.getAuthorId());
+        return CommentMapper.toShortDto(comment, author);
     }
 
     @Override
     @Transactional
     public CommentFullDto createComment(Long userId, Long eventId, NewCommentDto dto) {
-
-        UserShortDto author; // получаем пользователя - автора создаваемого комментария
-        try {
-            author = userClient.getUserShortById(userId);
-            if (author == null) {
-                throw new NotFoundException("User with id=" + userId + " not found");
-            }
-        } catch (FeignException e) {
-            if (e.status() == 404) {
-                throw new NotFoundException("User with id=" + userId + " was not found");
-            } else {
-                log.error("User service unavailable: status={}, error={}", e.status(), e.getMessage());
-                throw new RuntimeException("User service is currently unavailable", e);
-            }
-        }
-
-        EventBaseDto event; // получаем событие для которого создается комментарий
-        try {
-            event = eventClient.getBaseEventInfo(eventId);
-            if (event == null) {
-                throw new NotFoundException("Event with id=" + eventId + " not found");
-            }
-        } catch (FeignException e) {
-            if (e.status() == 404) {
-                throw new NotFoundException("Event with id=" + eventId + " was not found");
-            } else {
-                log.error("Event service unavailable: status={}, error={}", e.status(), e.getMessage());
-                throw new RuntimeException("Event service is currently unavailable", e);
-            }
-        }
+        UserShortDto author = getUserById(userId);
+        EventBaseDto event = getEventById(eventId);
 
         if (event.getState() != EventState.PUBLISHED) {
             throw new ConditionsNotMetException("Cannot comment on unpublished event");
@@ -142,10 +89,9 @@ public class CommentServiceImpl implements CommentService {
             throw new ConditionsNotMetException("User can only set status to DELETED");
         }
 
-        Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new NotFoundException("Comment with id=" + commentId + " not found"));
+        Comment comment = getCommentById(commentId);
 
-        if (!comment.getAuthor().getId().equals(userId)) {
+        if (!comment.getAuthorId().equals(userId)) {
             throw new ConditionsNotMetException("Only author or admin can update comments");
         }
 
@@ -154,18 +100,19 @@ public class CommentServiceImpl implements CommentService {
             throw new ConditionsNotMetException("Text can only be changed when comment is in PENDING status");
         }
 
+        UserShortDto author = getUserById(comment.getAuthorId());
+
         CommentMapper.updateCommentFromUserRequest(dto, comment);
         comment = commentRepository.save(comment);
-        return CommentMapper.toFullDto(comment);
+        return CommentMapper.toFullDto(comment, author, null);
     }
 
     @Override
     @Transactional
     public void deleteCommentByUser(Long userId, Long commentId) {
-        Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new NotFoundException("Comment with id=" + commentId + " not found"));
+        Comment comment = getCommentById(commentId);
 
-        if (!comment.getAuthor().getId().equals(userId)) {
+        if (!comment.getAuthorId().equals(userId)) {
             throw new ConditionsNotMetException("Only author or admin can delete comments");
         }
 
@@ -178,35 +125,155 @@ public class CommentServiceImpl implements CommentService {
     public List<CommentFullDto> getCommentsForModeration(int from, int size) {
         PageRequest page = PageRequest.of(from / size, size);
         List<Comment> comments = commentRepository.findByStatusOrderByCreatedAsc(CommentStatus.PENDING, page);
+
+        if (comments.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Map<Long, UserShortDto> userMap = fetchUsersFromComments(comments);
+
         return comments.stream()
-                .map(CommentMapper::toFullDto)
+                .map(comment -> {
+                    UserShortDto author = userMap.get(comment.getAuthorId());
+                    UserShortDto moderator = comment.getModeratorId() != null
+                            ? userMap.get(comment.getModeratorId())
+                            : null;
+
+                    return CommentMapper.toFullDto(comment, author, moderator);
+                })
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
     public CommentFullDto moderateComment(Long moderatorId, Long commentId, UpdateCommentAdminRequest dto) {
-        Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new NotFoundException("Comment with id=" + commentId + " not found"));
+        Comment comment = getCommentById(commentId);
 
-        User moderator = userRepository.findById(moderatorId)
-                .orElseThrow(() -> new NotFoundException("Moderator with id=" + moderatorId + " not found"));
+        Map<Long, UserShortDto> userMap = fetchUsersFromComments(List.of(comment), moderatorId);
 
-        CommentMapper.updateCommentFromAdminRequest(dto, comment, moderator);
+        UserShortDto author = userMap.get(comment.getAuthorId());
+        if (author == null) {
+            throw new NotFoundException("Author with id=" + comment.getAuthorId() + " not found");
+        }
+
+        UserShortDto moderator = userMap.get(moderatorId);
+        if (moderator == null) {
+            throw new NotFoundException("Moderator with id=" + moderatorId + " not found");
+        }
+
+        CommentMapper.updateCommentFromAdminRequest(dto, comment, moderator.getId());
         comment = commentRepository.save(comment);
-        return CommentMapper.toFullDto(comment);
+        return CommentMapper.toFullDto(comment, author, moderator);
     }
 
     @Override
     @Transactional
     public void deleteCommentByAdmin(Long moderatorId, Long commentId) {
-        Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new NotFoundException("Comment with id=" + commentId + " not found"));
+        Comment comment = getCommentById(commentId);
 
-        User moderator = userRepository.findById(moderatorId)
-                .orElseThrow(() -> new NotFoundException("Moderator with id=" + moderatorId + " not found"));
+        Map<Long, UserShortDto> userMap = fetchUsersFromComments(List.of(comment), moderatorId);
+
+        UserShortDto moderator = userMap.get(moderatorId);
+        if (moderator == null) {
+            throw new NotFoundException("Moderator with id=" + moderatorId + " not found");
+        }
 
         CommentMapper.adminDeleteComment(comment, moderator);
         commentRepository.save(comment);
+    }
+
+
+
+
+
+    private Comment getCommentById(Long commentId) {
+        return commentRepository.findById(commentId)
+                .orElseThrow(() -> new NotFoundException("Comment with id=" + commentId + " not found"));
+    }
+
+    private Comment getCommentByIdAndStatus(Long commentId, CommentStatus status) {
+        return commentRepository.findByIdAndStatus(commentId, status)
+                .orElseThrow(() -> new NotFoundException("Comment with id=" + commentId + " not found or not " + status));
+    }
+
+
+    private UserShortDto getUserById(Long userId) {
+        try {
+            UserShortDto user = userClient.getUserShortById(userId);
+            if (user == null) {
+                throw new NotFoundException("User with id=" + userId + " not found");
+            }
+            return user;
+        } catch (FeignException e) {
+            if (e.status() == 404) {
+                throw new NotFoundException("User with id=" + userId + " was not found");
+            } else {
+                log.error("User service unavailable: status={}, error={}", e.status(), e.getMessage());
+                throw new RuntimeException("User service is currently unavailable", e);
+            }
+        }
+    }
+
+    private EventBaseDto getEventById(Long eventId) {
+        try {
+            EventBaseDto event = eventClient.getBaseEventInfo(eventId);
+            if (event == null) {
+                throw new NotFoundException("Event with id=" + eventId + " not found");
+            }
+            return event;
+        } catch (FeignException e) {
+            if (e.status() == 404) {
+                throw new NotFoundException("Event with id=" + eventId + " was not found");
+            } else {
+                log.error("Event service unavailable: status={}, error={}", e.status(), e.getMessage());
+                throw new RuntimeException("Event service is currently unavailable", e);
+            }
+        }
+    }
+
+    /**
+     * Собирает все ID авторов и модераторов из списка комментариев
+     * и загружает их одним запросом в сервис пользователей.
+     */
+    private Map<Long, UserShortDto> fetchUsersFromComments(List<Comment> comments, Long... extraUserIds) {
+        if ((comments == null || comments.isEmpty()) && (extraUserIds == null || extraUserIds.length == 0)) {
+            return Map.of();
+        }
+
+        // Собираем все ID всех авторов и модераторов
+        Set<Long> userIds = new HashSet<>();
+
+        if (comments != null) {
+            comments.forEach(comment -> {
+                userIds.add(comment.getAuthorId());
+                if (comment.getModeratorId() != null) {
+                    userIds.add(comment.getModeratorId());
+                }
+            });
+        }
+
+        if (extraUserIds != null) {
+            for (Long id : extraUserIds) {
+                if (id != null) {
+                    userIds.add(id);
+                }
+            }
+        }
+
+        if (userIds.isEmpty()) {
+            return Map.of();
+        }
+
+        try {
+            Map<Long, UserShortDto> userMap = userClient.getUsersShortByIds(new ArrayList<>(userIds));
+            if (userMap == null) {
+                log.warn("User service returned null for userIds: {}", userIds);
+                return Map.of();
+            }
+            return userMap;
+        } catch (FeignException e) {
+            log.error("Failed to fetch users from user service: status={}, error={}", e.status(), e.getMessage());
+            throw new RuntimeException("User service is currently unavailable", e);
+        }
     }
 }

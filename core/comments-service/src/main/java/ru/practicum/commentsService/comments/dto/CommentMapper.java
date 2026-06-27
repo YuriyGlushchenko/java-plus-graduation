@@ -42,6 +42,8 @@ public class CommentMapper {
         boolean updated = false; // флаг, был ли изменен коммент в итоге или только модератор поменял статус
         if (request.getText() != null) {
             comment.setText(request.getText());
+            comment.setModeratorId(moderatorId);
+            comment.setModeratedAt(LocalDateTime.now());
             updated = true;
         }
         if (request.getStatus() != null) {  // модерация, это же не обновление по сути, а этап жизненного цикла комментраия, по этому updated не меняем
@@ -82,9 +84,9 @@ public class CommentMapper {
                 .build();
     }
 
-    public static void adminDeleteComment(Comment comment, User moderator) {
+    public static void adminDeleteComment(Comment comment, UserShortDto moderator) {
         comment.setStatus(CommentStatus.DELETED);
-        comment.setModerator(moderator);
+        comment.setModeratorId(moderator.getId());
         comment.setModeratedAt(LocalDateTime.now());
         comment.setUpdated(LocalDateTime.now());
     }
