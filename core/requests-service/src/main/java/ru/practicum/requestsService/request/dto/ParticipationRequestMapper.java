@@ -6,7 +6,6 @@ import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateResu
 import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;
 import ru.practicum.common.dto.participationRequest.RequestStatus;
 import ru.practicum.requestsService.request.model.ParticipationRequest;
-import ru.practicum.userService.user.model.User;
 
 
 import java.time.LocalDateTime;
@@ -20,10 +19,10 @@ public class ParticipationRequestMapper {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public static ParticipationRequest toParticipationRequest(Long eventId, User requester) {
+    public static ParticipationRequest toParticipationRequest(Long eventId, Long requesterId) {
         return ParticipationRequest.builder()
                 .eventId(eventId)
-                .requester(requester)
+                .requesterId(requesterId)
                 .created(LocalDateTime.now())
                 .status(RequestStatus.PENDING)
                 .build();
@@ -35,7 +34,7 @@ public class ParticipationRequestMapper {
                 .id(request.getId())
                 .created(request.getCreated().format(FORMATTER))
                 .event(request.getEventId())
-                .requester(request.getRequester().getId())
+                .requester(request.getRequesterId())
                 .status(request.getStatus())
                 .build();
     }

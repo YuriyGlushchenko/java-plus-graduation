@@ -3,9 +3,7 @@ package ru.practicum.eventsService.event.model;
 import jakarta.persistence.*;
 import lombok.*;
 import ru.practicum.common.dto.events.EventState;
-import ru.practicum.common.dto.events.Location;
 import ru.practicum.eventsService.categories.model.Category;
-import ru.practicum.userService.user.model.User;
 
 import java.time.LocalDateTime;
 
@@ -52,10 +50,6 @@ public class Event {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EventState state; // PENDING,PUBLISHED, CANCELED
-
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "initiator_id", nullable = false)
-//    private User initiator;
 
     // ID для  разделения вместо User initiator ////////////////////////////////////////////////////////
     @Column(name = "initiator_id")

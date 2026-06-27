@@ -2,6 +2,7 @@ package ru.practicum.commentsService.comments.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import ru.practicum.common.dto.comments.CommentStatus;
 import ru.practicum.userService.user.model.User;
 
 

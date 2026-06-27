@@ -1,22 +1,26 @@
 package ru.practicum.requestsService.request.service;
 
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.common.dto.events.EventBaseDto;
+import ru.practicum.common.dto.events.EventState;
 import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateRequest;
 import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateResult;
 import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;
 import ru.practicum.common.dto.participationRequest.RequestStatus;
 
 
+import ru.practicum.common.dto.users.UserShortDto;
 import ru.practicum.common.exceptions.exceptions.ConditionsNotMetException;
 import ru.practicum.common.exceptions.exceptions.NotFoundException;
+import ru.practicum.requestsService.request.client.EventClient;
+import ru.practicum.requestsService.request.client.UserClient;
 import ru.practicum.requestsService.request.dto.ParticipationRequestMapper;
 import ru.practicum.requestsService.request.model.ParticipationRequest;
 import ru.practicum.requestsService.request.repository.ParticipationRequestRepository;
-import ru.practicum.userService.user.model.User;
-import ru.practicum.userService.user.repository.UserRepository;
 
 
 import java.util.ArrayList;
@@ -29,9 +33,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ParticipationRequestServiceImpl implements ParticipationRequestService {
-//    private final EventRepository eventRepository;
     private final ParticipationRequestRepository requestRepository;
-    private final UserRepository userRepository;
+    private final UserClient userClient;
+    private final EventClient eventClient;
 
 
     @Override
@@ -41,38 +45,58 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
             throw new ConditionsNotMetException("Request already exists for this event");
         }
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User with id=" + userId + " was not found"));
+        UserShortDto user;
+        try {
+            user = userClient.getUserShortById(userId);
+            if (user == null) {
+                throw new NotFoundException("User with id=" + userId + " not found");
+            }
+        } catch (FeignException e) {
+            if (e.status() == 404) {
+                throw new NotFoundException("User with id=" + userId + " was not found");
+            } else {
+                log.error("User service unavailable: status={}, error={}", e.status(), e.getMessage());
+                throw new RuntimeException("User service is currently unavailable", e);
+            }
+        }
 
-        // toDo меняем на вызов через Feign Client в микросервис событий
+        EventBaseDto event;
+        try {
+            event = eventClient.getBaseEventInfo(eventId);
+            if (event == null) {
+                throw new NotFoundException("Event with id=" + eventId + " not found");
+            }
+        } catch (FeignException e) {
+            if (e.status() == 404) {
+                throw new NotFoundException("Event with id=" + eventId + " was not found");
+            } else {
+                log.error("Event service unavailable: status={}, error={}", e.status(), e.getMessage());
+                throw new RuntimeException("Event service is currently unavailable", e);
+            }
+        }
 
-//        Event event = eventRepository.findById(eventId)
-//                .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
-//
-//        if (event.getInitiator().getId().equals(userId)) {
-//            throw new ConditionsNotMetException("Initiator can`t add request to his own event");
-//        }
-//
-//        if (!event.getState().equals(EventState.PUBLISHED)) {
-//            throw new ConditionsNotMetException("Impossible to add request to not published event");
-//        }
-//
-//        if (event.getParticipantLimit() != 0) {
-//            long participants = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
-//            if (participants >= event.getParticipantLimit()) {
-//                throw new ConditionsNotMetException("The limit of participation requests has been reached: " + participants);
-//            }
-//        }
-//
-//        ParticipationRequest request = ParticipationRequestMapper.toParticipationRequest(event, user);
-//        if (event.getParticipantLimit() == 0 || !event.getRequestModeration()) {
-//            request.setStatus(RequestStatus.CONFIRMED);
-//        }
-//        request = requestRepository.save(request);
+        if (event.getInitiator().getId().equals(userId)) {
+            throw new ConditionsNotMetException("Initiator can`t add request to his own event");
+        }
 
-//        return ParticipationRequestMapper.toParticipationRequestDto(request);
+        if (!event.getState().equals(EventState.PUBLISHED)) {
+            throw new ConditionsNotMetException("Impossible to add request to not published event");
+        }
 
-        return null;
+        if (event.getParticipantLimit() != 0) {
+            long participants = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
+            if (participants >= event.getParticipantLimit()) {
+                throw new ConditionsNotMetException("The limit of participation requests has been reached: " + participants);
+            }
+        }
+
+        ParticipationRequest request = ParticipationRequestMapper.toParticipationRequest(event.getId(), user.getId());
+        if (event.getParticipantLimit() == 0 || !event.getRequestModeration()) {
+            request.setStatus(RequestStatus.CONFIRMED);
+        }
+        request = requestRepository.save(request);
+
+        return ParticipationRequestMapper.toParticipationRequestDto(request);
     }
 
     @Override
@@ -92,7 +116,7 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
         ParticipationRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new NotFoundException("Request with id=" + requestId + " was not found"));
 
-        if (!request.getRequester().getId().equals(userId)) {
+        if (!request.getRequesterId().equals(userId)) {
             throw new NotFoundException("Request with id=" + requestId + " not found for user with id=" + userId);
         }
 
@@ -107,16 +131,6 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
 
         return ParticipationRequestMapper.toParticipationRequestDto(request);
     }
-
-
-
-
-
-
-
-
-
-
 
 
     @Override
@@ -156,9 +170,23 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
         // Получаем текущее количество подтвержденных заявок
         long confirmedCount = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
 
-        // Получаем лимит (для этого нужен вызов к events-service, но пока не реализовано)
-        // Временно используем большой лимит, пока не реализуем
-        long limit = 1000; // TODO: получить лимит из events-service
+        // Получаем лимит
+        EventBaseDto event;
+        try {
+            event = eventClient.getBaseEventInfo(eventId);
+            if (event == null) {
+                throw new NotFoundException("Event with id=" + eventId + " not found");
+            }
+        } catch (FeignException e) {
+            if (e.status() == 404) {
+                throw new NotFoundException("Event with id=" + eventId + " was not found");
+            } else {
+                log.error("Event service unavailable: status={}, error={}", e.status(), e.getMessage());
+                throw new RuntimeException("Event service is currently unavailable", e);
+            }
+        }
+
+        long limit = event.getParticipantLimit() != null ? event.getParticipantLimit() : 0;
 
         if (updateRequest.getStatus().equals(RequestStatus.CONFIRMED)) {
             for (ParticipationRequest r : requests) {

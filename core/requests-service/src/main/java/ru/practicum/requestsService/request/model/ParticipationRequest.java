@@ -3,8 +3,6 @@ package ru.practicum.requestsService.request.model;
 import jakarta.persistence.*;
 import lombok.*;
 import ru.practicum.common.dto.participationRequest.RequestStatus;
-import ru.practicum.userService.user.model.User;
-
 
 import java.time.LocalDateTime;
 
@@ -26,16 +24,11 @@ public class ParticipationRequest {
     @Column(nullable = false)
     private LocalDateTime created;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "event_id", nullable = false)
-//    private Event event;
-
-    @JoinColumn(name = "event_id", nullable = false)
+    @Column(name = "event_id", nullable = false)
     private Long eventId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "requester_id", nullable = false)
-    private User requester;
+    @Column(name = "requester_id", nullable = false)
+    private Long requesterId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

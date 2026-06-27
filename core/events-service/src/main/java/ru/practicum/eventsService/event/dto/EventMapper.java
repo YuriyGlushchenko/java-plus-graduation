@@ -1,15 +1,12 @@
 package ru.practicum.eventsService.event.dto;
 
 import lombok.RequiredArgsConstructor;
-import ru.practicum.common.dto.events.EventFullDto;
-import ru.practicum.common.dto.events.EventShortDto;
-import ru.practicum.common.dto.events.Location;
+import ru.practicum.common.dto.events.*;
 import ru.practicum.common.dto.users.UserShortDto;
 import ru.practicum.eventsService.categories.dto.CategoryMapper;
 import ru.practicum.eventsService.categories.model.Category;
 import ru.practicum.eventsService.event.model.Event;
 import ru.practicum.eventsService.event.model.EventLocation;
-import ru.practicum.common.dto.events.EventState;
 
 
 import java.time.LocalDateTime;
@@ -130,6 +127,33 @@ public class EventMapper {
                 .paid(event.getPaid())
                 .title(event.getTitle())
                 .views(views)
+                .build();
+    }
+
+    public static EventBaseDto toEventBaseDto(Event event) {
+        if (event == null) {
+            return null;
+        }
+
+        return EventBaseDto.builder()
+                .id(event.getId())
+                .annotation(event.getAnnotation())
+                .category(CategoryMapper.toCategoryDto(event.getCategory()))
+                .createdOn(event.getCreatedOn())
+                .description(event.getDescription())
+                .eventDate(event.getEventDate())
+                .initiator(
+                        UserShortDto.builder()
+                                .id(event.getInitiatorId())
+                                .build()
+                )
+                .location(toLocation(event.getLocation()))
+                .paid(event.getPaid())
+                .participantLimit(event.getParticipantLimit())
+                .publishedOn(event.getPublishedOn())
+                .requestModeration(event.getRequestModeration())
+                .state(event.getState())
+                .title(event.getTitle())
                 .build();
     }
 

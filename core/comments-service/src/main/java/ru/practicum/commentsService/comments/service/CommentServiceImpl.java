@@ -10,7 +10,7 @@ import ru.practicum.commentsService.comments.dto.NewCommentDto;
 import ru.practicum.commentsService.comments.dto.UpdateCommentAdminRequest;
 import ru.practicum.commentsService.comments.dto.UpdateCommentUserRequest;
 import ru.practicum.commentsService.comments.model.Comment;
-import ru.practicum.commentsService.comments.model.CommentStatus;
+import ru.practicum.common.dto.comments.CommentStatus;
 import ru.practicum.commentsService.comments.repository.CommentRepository;
 import ru.practicum.common.dto.comments.CommentFullDto;
 import ru.practicum.common.dto.comments.CommentShortDto;

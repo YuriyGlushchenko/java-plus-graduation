@@ -1,4 +1,4 @@
-package ru.practicum.commentsService.comments.model;
+package ru.practicum.common.dto.comments;
 
 public enum CommentStatus {
     PENDING,

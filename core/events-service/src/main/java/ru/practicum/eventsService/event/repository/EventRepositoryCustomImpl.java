@@ -8,9 +8,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import ru.practicum.common.dto.events.EventFullDto;
 import ru.practicum.common.dto.events.EventShortDto;
+import ru.practicum.common.dto.events.EventState;
 import ru.practicum.common.dto.events.Location;
 import ru.practicum.common.dto.events.category.CategoryDto;
-import ru.practicum.common.dto.events.EventState;
 import ru.practicum.common.dto.users.UserShortDto;
 import ru.practicum.eventsService.event.dto.paramDto.EventRepositoryParam;
 import ru.practicum.eventsService.event.model.QEvent;
@@ -37,8 +37,7 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
 
         BooleanBuilder predicate = createPredicate(param);
 
-        // начинаем составлять запрос (но не отправляем!)
-        var query = queryFactory  // var - компилятор сам определяет тип (JPAQuery<EventShortDto> в данном случае)
+        return queryFactory
                 .select(Projections.constructor(EventShortDto.class,
                         event.id,
                         event.annotation,
@@ -64,15 +63,11 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                         event.initiatorId,
                         event.paid,
                         event.title
-                );
-
-        // фильтрация onlyAvailable теперь обрабатывается в сервисе, т.к. больше нет связи с request
-
-        return query
+                )
                 .orderBy(event.eventDate.asc()) // сортируем сразу по дате, если нужна по views, то потом в сервисе переделываем
                 .offset(param.getFrom())
                 .limit(param.getSize())
-                .fetch(); // вот только тут отправляется запрос
+                .fetch();
 
     }
 
@@ -132,13 +127,12 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
     }
 
 
-
     @Override
     public List<EventFullDto> findEventsFullDto(EventRepositoryParam param) {
 
         BooleanBuilder predicate = createPredicate(param);
 
-        var query = queryFactory
+        return queryFactory
                 .select(Projections.constructor(EventFullDto.class,
                         event.id,
                         event.annotation,
@@ -183,12 +177,8 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                         event.requestModeration,
                         event.state,
                         event.title
-                );
-
-        // onlyAvailable теперь в сервисе
-
-        return query
-                .orderBy(event.eventDate.asc())
+                )
+                .orderBy(event.eventDate.asc())   // onlyAvailable теперь в сервисе, т.к. нет доступа к requsts
                 .offset(param.getFrom())
                 .limit(param.getSize())
                 .fetch();

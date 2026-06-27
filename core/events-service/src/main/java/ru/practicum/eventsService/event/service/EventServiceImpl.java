@@ -5,8 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.commentsService.comments.model.CommentStatus;
-import ru.practicum.commentsService.comments.repository.CommentRepository;
+import ru.practicum.common.dto.comments.CommentStatus;
 import ru.practicum.common.dto.events.*;
 import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateRequest;
 import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateResult;
@@ -16,6 +15,7 @@ import ru.practicum.common.exceptions.exceptions.ConditionsNotMetException;
 import ru.practicum.common.exceptions.exceptions.NotFoundException;
 import ru.practicum.eventsService.categories.model.Category;
 import ru.practicum.eventsService.categories.repository.CategoryRepository;
+import ru.practicum.eventsService.client.CommentClint;
 import ru.practicum.eventsService.client.ParticipationRequestClient;
 import ru.practicum.eventsService.client.UserClient;
 import ru.practicum.eventsService.event.dto.EventMapper;
@@ -44,9 +44,9 @@ public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
     private final CategoryRepository categoryRepository;
     private final StatsClient statsClient;
-    private final CommentRepository commentRepository;
     private final UserClient userClient;
-    private final ParticipationRequestClient requestClient; // ← НОВЫЙ Feign Client
+    private final ParticipationRequestClient requestClient;
+    private final CommentClint commentClint;
 
     @Transactional
     @Override
@@ -300,7 +300,6 @@ public class EventServiceImpl implements EventService {
         Map<Long, Long> hits = fetchViews(uris, event.getEventDate());
         Long views = hits.getOrDefault(event.getId(), 0L);
 
-        // ✅ Получаем количество подтвержденных заявок через Feign Client
         Long confirmedRequests = requestClient.getConfirmedRequestsCount(eventId);
 
         UserShortDto initiator = userClient.getUserShortById(event.getInitiatorId());
@@ -322,7 +321,6 @@ public class EventServiceImpl implements EventService {
 
         sendHit(uri, ip, LocalDateTime.now());
 
-        // ✅ Получаем количество подтвержденных заявок через Feign Client
         enrichEventWithConfirmedRequests(event);
         enrichEventWithViews(event);
         enrichEventsListWithCommentsCount(List.of(event));
@@ -339,7 +337,6 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Event with id=" + eventId + " not found for user with id=" + userId);
         }
 
-        // ✅ Вызов через Feign Client
         try {
             return requestClient.getRequestsByEventId(eventId);
         } catch (FeignException e) {
@@ -358,7 +355,6 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Event with id=" + eventId + " not found for user with id=" + userId);
         }
 
-        // ✅ Вызов через Feign Client
         try {
             return requestClient.updateRequestStatuses(eventId, updateRequest);
         } catch (FeignException e) {
@@ -379,7 +375,6 @@ public class EventServiceImpl implements EventService {
                 .map(event -> EventMapper.toEventShortDto(event, 0L, 0L))
                 .collect(Collectors.toList());
 
-        // ✅ Получаем количество подтвержденных заявок через Feign Client
         enrichEventsWithConfirmedRequests(dtos);
         enrichEventsWithViews(dtos);
         enrichEventsListWithCommentsCount(dtos);
@@ -416,7 +411,6 @@ public class EventServiceImpl implements EventService {
      * Обогащает одно событие количеством подтвержденных заявок
      */
     private void enrichEventWithConfirmedRequests(EventFullDto event) {
-        // ✅ Просто вызываем списковый метод с одним элементом
         enrichEventsWithConfirmedRequests(List.of(event));
     }
 
@@ -488,20 +482,14 @@ public class EventServiceImpl implements EventService {
         statsClient.hit(hitDto);
     }
 
-    private <T extends Commentable> void enrichEventsListWithCommentsCount(List<T> eventDtos) {
+    private void enrichEventsListWithCommentsCount(List<? extends Commentable> eventDtos) {
         if (eventDtos.isEmpty()) return;
 
         List<Long> ids = eventDtos.stream()
                 .map(Commentable::getId)
                 .collect(Collectors.toList());
 
-        List<Object[]> counts = commentRepository.countByEventIdInAndStatus(ids, CommentStatus.APPROVED);
-        // просто переделываем список из массивов [id, count] в Map <id, count>
-        Map<Long, Long> countsMap = counts.stream()
-                .collect(Collectors.toMap(
-                        arr -> (Long) arr[0], // берем первую цифру из массива - это eventId
-                        arr -> (Long) arr[1]  // берем вторую цифру из массива - это count
-                ));
+        Map<Long, Long> countsMap = commentClint.getCommentCountsByEventIds(ids, CommentStatus.APPROVED);
 
         eventDtos.forEach(item -> item.setCommentsCount(countsMap.getOrDefault(item.getId(), 0L)));
     }
