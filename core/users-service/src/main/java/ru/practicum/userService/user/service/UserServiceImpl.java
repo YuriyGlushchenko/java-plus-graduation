@@ -14,7 +14,9 @@ import ru.practicum.userService.user.model.User;
 import ru.practicum.userService.user.repository.UserRepository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -75,15 +77,24 @@ public class UserServiceImpl implements UserService {
         log.info("Deleted user with id: {}", userId);
     }
 
-    // toDo удалить в конце
+    @Override
+    public Map<Long, UserShortDto> getUsersShortByIds(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
 
-    //    public List<UserDto> findBy(UserParam param){
-//        Specification<User> spec = new UserSpecification(param);
-//        Page<User> page = userRepository.findAll(spec, param.getPageable());
-//        HashMap<User, Integer> views = new HashMap<>(); // через клиента
-//        List<UserDto> dto = userMapper.toDto(page.getContent(), views);
-//        return dto;
-//    }
+        // Убираем дубликаты
+        List<Long> uniqueIds = userIds.stream().distinct().collect(Collectors.toList());
+
+        List<User> users = userRepository.findAllById(uniqueIds);
+
+        return users.stream()
+                .collect(Collectors.toMap(
+                        User::getId,
+                        UserMapper::toUserShortDto)
+//                        user -> new UserShortDto(user.getId(), user.getName())
+                );
+    }
 
 
 }

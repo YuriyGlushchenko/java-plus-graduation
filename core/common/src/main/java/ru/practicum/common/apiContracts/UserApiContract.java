@@ -7,14 +7,9 @@ import ru.practicum.common.dto.users.UserDto;
 import ru.practicum.common.dto.users.UserShortDto;
 
 import java.util.List;
+import java.util.Map;
 
 public interface UserApiContract {
-    @GetMapping
-    List<UserDto> getUsers(
-            @RequestParam(required = false) List<Long> ids,
-            @RequestParam(required = false, defaultValue = "0") @Min(0) int from,
-            @RequestParam(required = false, defaultValue = "10") @Positive int size
-    );
 
     @GetMapping("/{userId}")
     UserDto getUserById(@PathVariable long userId);
@@ -23,4 +18,7 @@ public interface UserApiContract {
     UserShortDto getUserShortById(@PathVariable long userId);
 
     Boolean isUserExist(@PathVariable long userId);
+
+    @PostMapping("/batch")
+    public Map<Long, UserShortDto> getUsersShortByIds(@RequestBody List<Long> userIds);
 }

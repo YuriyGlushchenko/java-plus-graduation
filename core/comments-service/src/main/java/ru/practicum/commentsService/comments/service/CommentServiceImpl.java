@@ -1,27 +1,32 @@
 package ru.practicum.commentsService.comments.service;
 
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.commentsService.comments.client.EventClient;
+import ru.practicum.commentsService.comments.client.UserClient;
 import ru.practicum.commentsService.comments.dto.CommentMapper;
 import ru.practicum.commentsService.comments.dto.NewCommentDto;
 import ru.practicum.commentsService.comments.dto.UpdateCommentAdminRequest;
 import ru.practicum.commentsService.comments.dto.UpdateCommentUserRequest;
 import ru.practicum.commentsService.comments.model.Comment;
-import ru.practicum.common.dto.comments.CommentStatus;
 import ru.practicum.commentsService.comments.repository.CommentRepository;
 import ru.practicum.common.dto.comments.CommentFullDto;
 import ru.practicum.common.dto.comments.CommentShortDto;
+import ru.practicum.common.dto.comments.CommentStatus;
+import ru.practicum.common.dto.events.EventBaseDto;
+import ru.practicum.common.dto.events.EventState;
+import ru.practicum.common.dto.users.UserShortDto;
 import ru.practicum.common.exceptions.exceptions.ConditionsNotMetException;
 import ru.practicum.common.exceptions.exceptions.NotFoundException;
-import ru.practicum.userService.user.model.User;
-import ru.practicum.userService.user.repository.UserRepository;
-
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -31,17 +36,52 @@ import java.util.stream.Collectors;
 public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
-    private final UserRepository userRepository;
-//    private final EventRepository eventRepository;
+    private final UserClient userClient;
+    private final EventClient eventClient;
 
     @Override
     public List<CommentShortDto> getEventComments(Long eventId, int from, int size) {
         PageRequest page = PageRequest.of(from / size, size);
+
         List<Comment> comments = commentRepository.findByEventIdAndStatusOrderByCreatedDesc(
                 eventId, CommentStatus.APPROVED, page);  // публичный запрос, по этому только APPROVED
+
+
+        if (comments.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // собираем id всех авторов
+        List<Long> userIds = comments.stream().map(Comment::getAuthorId).toList();
+
+        // загружаем одним запросом всех юзеров по их id
+        Map<Long, UserShortDto> userMap;
+        try {
+            userMap = userClient.getUsersShortByIds(userIds);
+            if (userMap == null) {
+                throw new NotFoundException("Comments authors not found");
+            }
+        } catch (FeignException e) {
+            if (e.status() == 404) {
+                throw new NotFoundException("Comments authors not found");
+            } else {
+                log.error("User service unavailable: status={}, error={}", e.status(), e.getMessage());
+                throw new RuntimeException("User service is currently unavailable", e);
+            }
+        }
+
         return comments.stream()
-                .map(CommentMapper::toShortDto)
+                .map(comment -> {
+                    UserShortDto author = userMap.get(comment.getAuthorId());
+                    UserShortDto moderator = comment.getModeratorId() != null
+                            ? userMap.get(comment.getModeratorId())
+                            : null;
+
+                    return CommentMapper.toShortDto(comment, author);
+                })
                 .collect(Collectors.toList());
+
+
     }
 
     @Override
@@ -54,21 +94,44 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public CommentFullDto createComment(Long userId, Long eventId, NewCommentDto dto) {
-        User author = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found"));
 
-        // todo переписать на вызов feign
-//        Event event = eventRepository.findById(eventId)
-//                .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " not found"));
-//
-//        if (event.getState() != EventState.PUBLISHED) {
-//            throw new ConditionsNotMetException("Cannot comment on unpublished event");
-//        }
-        Long eventIdTemp = -1L;
+        UserShortDto author; // получаем пользователя - автора создаваемого комментария
+        try {
+            author = userClient.getUserShortById(userId);
+            if (author == null) {
+                throw new NotFoundException("User with id=" + userId + " not found");
+            }
+        } catch (FeignException e) {
+            if (e.status() == 404) {
+                throw new NotFoundException("User with id=" + userId + " was not found");
+            } else {
+                log.error("User service unavailable: status={}, error={}", e.status(), e.getMessage());
+                throw new RuntimeException("User service is currently unavailable", e);
+            }
+        }
 
-        Comment comment = CommentMapper.toComment(dto, author, eventId);
+        EventBaseDto event; // получаем событие для которого создается комментарий
+        try {
+            event = eventClient.getBaseEventInfo(eventId);
+            if (event == null) {
+                throw new NotFoundException("Event with id=" + eventId + " not found");
+            }
+        } catch (FeignException e) {
+            if (e.status() == 404) {
+                throw new NotFoundException("Event with id=" + eventId + " was not found");
+            } else {
+                log.error("Event service unavailable: status={}, error={}", e.status(), e.getMessage());
+                throw new RuntimeException("Event service is currently unavailable", e);
+            }
+        }
+
+        if (event.getState() != EventState.PUBLISHED) {
+            throw new ConditionsNotMetException("Cannot comment on unpublished event");
+        }
+
+        Comment comment = CommentMapper.toComment(dto, author.getId(), eventId);
         comment = commentRepository.save(comment);
-        return CommentMapper.toFullDto(comment);
+        return CommentMapper.toFullDto(comment, author, null);
     }
 
     @Override

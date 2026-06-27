@@ -5,9 +5,7 @@ import ru.practicum.commentsService.comments.model.Comment;
 import ru.practicum.common.dto.comments.CommentStatus;
 import ru.practicum.common.dto.comments.CommentFullDto;
 import ru.practicum.common.dto.comments.CommentShortDto;
-import ru.practicum.userService.user.dto.UserMapper;
-import ru.practicum.userService.user.model.User;
-
+import ru.practicum.common.dto.users.UserShortDto;
 
 import java.time.LocalDateTime;
 
@@ -15,10 +13,10 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class CommentMapper {
 
-    public static Comment toComment(NewCommentDto dto, User author, Long event) {
+    public static Comment toComment(NewCommentDto dto, Long author, Long event) {
         return Comment.builder()
                 .text(dto.getText())
-                .author(author)
+                .authorId(author)
                 .eventId(event)
                 .created(LocalDateTime.now())
                 .status(CommentStatus.PENDING)
@@ -40,15 +38,15 @@ public class CommentMapper {
         }
     }
 
-    public static void updateCommentFromAdminRequest(UpdateCommentAdminRequest request, Comment comment, User moderator) {
+    public static void updateCommentFromAdminRequest(UpdateCommentAdminRequest request, Comment comment, Long moderatorId) {
         boolean updated = false; // флаг, был ли изменен коммент в итоге или только модератор поменял статус
         if (request.getText() != null) {
             comment.setText(request.getText());
             updated = true;
         }
-        if (request.getStatus() != null) {  // модерация, это же не обновление по сути, а этап жизненного цикла, по этому updated не меняем
+        if (request.getStatus() != null) {  // модерация, это же не обновление по сути, а этап жизненного цикла комментраия, по этому updated не меняем
             comment.setStatus(request.getStatus());
-            comment.setModerator(moderator);
+            comment.setModeratorId(moderatorId);
             comment.setModeratedAt(LocalDateTime.now());
         }
         if (updated) {
@@ -56,29 +54,29 @@ public class CommentMapper {
         }
     }
 
-    public static CommentFullDto toFullDto(Comment comment) {
+    public static CommentFullDto toFullDto(Comment comment, UserShortDto user, UserShortDto moderator) {
         CommentFullDto.CommentFullDtoBuilder builder = CommentFullDto.builder()
                 .id(comment.getId())
                 .text(comment.getText())
-                .author(UserMapper.toUserShortDto(comment.getAuthor()))
+                .author(user)
                 .eventId(comment.getEventId())
                 .created(comment.getCreated())
                 .updated(comment.getUpdated())
                 .status(comment.getStatus().name());
 
-        if (comment.getModerator() != null) {
-            builder.moderator(UserMapper.toUserShortDto(comment.getModerator()))
+        if (comment.getModeratorId() != null && moderator != null) {
+            builder.moderator(moderator)
                     .moderatedAt(comment.getModeratedAt());
         }
 
         return builder.build();
     }
 
-    public static CommentShortDto toShortDto(Comment comment) {
+    public static CommentShortDto toShortDto(Comment comment, UserShortDto user) {
         return CommentShortDto.builder()
                 .id(comment.getId())
                 .text(comment.getText())
-                .author(UserMapper.toUserShortDto(comment.getAuthor()))
+                .author(user)
                 .eventId(comment.getEventId())
                 .created(comment.getCreated())
                 .build();

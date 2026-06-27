@@ -3,8 +3,6 @@ package ru.practicum.commentsService.comments.model;
 import jakarta.persistence.*;
 import lombok.*;
 import ru.practicum.common.dto.comments.CommentStatus;
-import ru.practicum.userService.user.model.User;
-
 
 import java.time.LocalDateTime;
 
@@ -23,13 +21,8 @@ public class Comment {
     @Column(nullable = false, length = 2000)
     private String text;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "author_id", nullable = false)
-    private User author;
-
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "event_id", nullable = false)
-//    private Event event;
+    @Column(name = "author_id", nullable = false)
+    private Long authorId;
 
     @Column(name = "event_id", nullable = false)
     private Long eventId;
@@ -43,9 +36,8 @@ public class Comment {
     @Column(nullable = false)
     private CommentStatus status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "moderated_by")
-    private User moderator;
+    @Column(name = "moderated_by")
+    private Long moderatorId;
 
     private LocalDateTime moderatedAt;
 }
