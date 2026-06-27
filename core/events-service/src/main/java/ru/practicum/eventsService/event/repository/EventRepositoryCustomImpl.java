@@ -17,8 +17,11 @@ import ru.practicum.eventsService.event.model.QEvent;
 
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -39,7 +42,7 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                         Projections.constructor(CategoryDto.class, event.category.id, event.category.name), // проекция в DTO
                         Expressions.asNumber(0L).as("confirmedRequests"), // confirmedRequests заполняется в сервисе через Feign Client.
                         event.eventDate,
-                        Projections.constructor(UserShortDto.class, event.initiator.id, event.initiator.name), // проекция в DTO
+                        Projections.constructor(UserShortDto.class, event.initiatorId, event.initiator.name), // проекция в DTO
                         event.paid,
                         event.publishedOn,
                         event.title,
@@ -227,5 +230,23 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
         }
 
         return predicate;
+    }
+
+    @Override
+    public Map<Long, Integer> findParticipantLimitsByIdIn(List<Long> eventIds) {
+        if (eventIds == null || eventIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        return queryFactory
+                .select(event.id, event.participantLimit)
+                .from(event)
+                .where(event.id.in(eventIds))
+                .fetch()
+                .stream()
+                .collect(Collectors.toMap(
+                        tuple -> tuple.get(event.id),
+                        tuple -> tuple.get(event.participantLimit)
+                ));
     }
 }

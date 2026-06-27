@@ -35,6 +35,6 @@ public class AdminEventController {
             @RequestBody @Valid UpdateEventAdminRequest body) {
         log.debug("Admin request to update event:  eventId={}", eventId);
 
-        return eventService.updateEvent(eventId, body);
+        return eventService.updateEventByAdmin(eventId, body);
     }
 }

@@ -30,7 +30,7 @@ public interface EventService {
 
     EventFullDto updateUserEvent(Long userId, Long eventId, UpdateEventUserRequest body);
 
-    EventFullDto updateEvent(Long eventId, UpdateEventAdminRequest body);
+    EventFullDto updateEventByAdmin(Long eventId, UpdateEventAdminRequest body);
 
     List<ParticipationRequestDto> getParticipationRequests(Long userId, Long eventId);
 

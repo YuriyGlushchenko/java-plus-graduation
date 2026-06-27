@@ -11,12 +11,12 @@ import ru.practicum.common.dto.events.*;
 import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateRequest;
 import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateResult;
 import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;
-import ru.practicum.common.dto.users.UserDto;
 import ru.practicum.common.dto.users.UserShortDto;
 import ru.practicum.common.exceptions.exceptions.ConditionsNotMetException;
 import ru.practicum.common.exceptions.exceptions.NotFoundException;
 import ru.practicum.eventsService.categories.model.Category;
 import ru.practicum.eventsService.categories.repository.CategoryRepository;
+import ru.practicum.eventsService.client.ParticipationRequestClient;
 import ru.practicum.eventsService.client.UserClient;
 import ru.practicum.eventsService.event.dto.EventMapper;
 import ru.practicum.eventsService.event.dto.NewEventDto;
@@ -32,6 +32,7 @@ import ru.practicum.stat.client.StatsClient;
 import ru.practicum.stat.dto.EndpointHitDto;
 import ru.practicum.stat.dto.ParamDto;
 import ru.practicum.stat.dto.ViewStatsDto;
+
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -42,11 +43,10 @@ import java.util.stream.Collectors;
 public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
     private final CategoryRepository categoryRepository;
-    //    private final ParticipationRequestRepository requestRepository; // todo меняем на вызов Feign Client к requests-service
     private final StatsClient statsClient;
     private final CommentRepository commentRepository;
     private final UserClient userClient;
-
+    private final ParticipationRequestClient requestClient; // ← НОВЫЙ Feign Client
 
     @Transactional
     @Override
@@ -58,23 +58,21 @@ public class EventServiceImpl implements EventService {
         }
 
         // раз по условию пользователь аутентифицирован и авторизован, значит он точно есть
-        UserShortDto userDto = null;
+        UserShortDto userDto;
 
         try {
             userDto = userClient.getUserShortById(userId);
-
             if (userDto == null) {
                 throw new NotFoundException("User with id=" + userId + " not found");
             }
         } catch (FeignException e) {
             if (e.status() == 404) {
-                throw new NotFoundException("Event with id=" + userId + " was not found");
+                throw new NotFoundException("User with id=" + userId + " was not found");
             } else {
                 log.error("User service unavailable: status={}, error={}", e.status(), e.getMessage());
                 throw new RuntimeException("User service is currently unavailable", e);
             }
         }
-
 
         Category cat = categoryRepository.getCategory(newEventDto.getCategory());
 
@@ -98,6 +96,8 @@ public class EventServiceImpl implements EventService {
             return events;
         }
 
+        // ✅ Получаем количество подтвержденных заявок через Feign Client
+        enrichEventsWithConfirmedRequests(events);
         enrichEventsWithViews(events);
         enrichEventsListWithCommentsCount(events);
 
@@ -113,6 +113,28 @@ public class EventServiceImpl implements EventService {
             return events;
         }
 
+        // Фильтр onlyAvailable теперь обрабатывается тут, а не в репозитории из-за разделения модулей
+        if (param.isOnlyAvailable()) {
+            List<Long> eventIds = events.stream().map(EventShortDto::getId).collect(Collectors.toList());
+
+            // Получаем лимиты из репозитория
+            Map<Long, Integer> limits = eventRepository.findParticipantLimitsByIdIn(eventIds);
+            Map<Long, Long> confirmedCounts = requestClient.getConfirmedRequestsCounts(eventIds);
+
+            events = events.stream()
+                    .filter(event -> {
+                        Integer limit = limits.getOrDefault(event.getId(), 0);
+                        if (limit == 0) {
+                            return true;
+                        }
+                        Long confirmed = confirmedCounts.getOrDefault(event.getId(), 0L);
+                        return confirmed < limit;
+                    })
+                    .collect(Collectors.toList());
+        }
+
+        // ✅ Получаем количество подтвержденных заявок через Feign Client
+        enrichEventsWithConfirmedRequests(events);
         enrichEventsWithViews(events);
         enrichEventsListWithCommentsCount(events);
 
@@ -134,6 +156,8 @@ public class EventServiceImpl implements EventService {
             return events;
         }
 
+        // ✅ Получаем количество подтвержденных заявок через Feign Client
+        enrichEventsWithConfirmedRequests(events);
         enrichEventsWithViews(events);
         enrichEventsListWithCommentsCount(events);
 
@@ -150,6 +174,8 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Event with id=" + eventId + " not found for user with id=" + userId);
         }
 
+        // ✅ Получаем количество подтвержденных заявок через Feign Client
+        enrichEventWithConfirmedRequests(event);
         enrichEventWithViews(event);
         enrichEventsListWithCommentsCount(List.of(event));
 
@@ -181,7 +207,6 @@ public class EventServiceImpl implements EventService {
             if (newEventDate.isBefore(minEventDateForUpdating)) {
                 throw new ConditionsNotMetException("Unable to update event at last 2 hours before event date");
             }
-
         }
 
         if (body.getStateAction() != null) {
@@ -214,21 +239,20 @@ public class EventServiceImpl implements EventService {
         Map<Long, Long> hits = fetchViews(uris, event.getEventDate());
         Long views = hits.getOrDefault(event.getId(), 0L);
 
-        // todo меняем на вызов Feign Client к requests-service
-//        long confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
+        // ✅ Получаем количество подтвержденных заявок через Feign Client
+        Long confirmedRequests = requestClient.getConfirmedRequestsCount(eventId);
 
-//        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmedRequests, views);
-//        enrichEventsListWithCommentsCount(List.of(eventFullDto));
+        UserShortDto initiator = userClient.getUserShortById(event.getInitiatorId());
 
-//        return eventFullDto;
+        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmedRequests, views, initiator);
+        enrichEventsListWithCommentsCount(List.of(eventFullDto));
 
-        return null;
+        return eventFullDto;
     }
-
 
     @Override
     @Transactional
-    public EventFullDto updateEvent(Long eventId, UpdateEventAdminRequest body) {
+    public EventFullDto updateEventByAdmin(Long eventId, UpdateEventAdminRequest body) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
 
@@ -276,15 +300,15 @@ public class EventServiceImpl implements EventService {
         Map<Long, Long> hits = fetchViews(uris, event.getEventDate());
         Long views = hits.getOrDefault(event.getId(), 0L);
 
+        // ✅ Получаем количество подтвержденных заявок через Feign Client
+        Long confirmedRequests = requestClient.getConfirmedRequestsCount(eventId);
 
-        // todo меняем на вызов Feign Client к requests-service
-//        long confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
+        UserShortDto initiator = userClient.getUserShortById(event.getInitiatorId());
 
-//        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmedRequests, views);
-//        enrichEventsListWithCommentsCount(List.of(eventFullDto));
+        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmedRequests, views, initiator);
+        enrichEventsListWithCommentsCount(List.of(eventFullDto));
 
-//        return eventFullDto;
-        return null;
+        return eventFullDto;
     }
 
     public EventFullDto findEventById(String uri, String ip, Long id) {
@@ -297,6 +321,9 @@ public class EventServiceImpl implements EventService {
         }
 
         sendHit(uri, ip, LocalDateTime.now());
+
+        // ✅ Получаем количество подтвержденных заявок через Feign Client
+        enrichEventWithConfirmedRequests(event);
         enrichEventWithViews(event);
         enrichEventsListWithCommentsCount(List.of(event));
 
@@ -312,13 +339,13 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Event with id=" + eventId + " not found for user with id=" + userId);
         }
 
-        // todo меняем на вызов Feign Client к requests-service
-
-//        List<ParticipationRequest> requests = requestRepository.findByEventId(eventId);
-//
-//        return ParticipationRequestMapper.toParticipationRequestDto(requests);
-        return null;
-
+        // ✅ Вызов через Feign Client
+        try {
+            return requestClient.getRequestsByEventId(eventId);
+        } catch (FeignException e) {
+            log.error("Failed to get requests for eventId={}, status={}", eventId, e.status());
+            throw new RuntimeException("Request service is currently unavailable", e);
+        }
     }
 
     @Override
@@ -331,57 +358,13 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Event with id=" + eventId + " not found for user with id=" + userId);
         }
 
-        // todo меняем на вызов Feign Client к requests-service
-
-//        List<ParticipationRequest> requests = requestRepository.findByIdIn(updateRequest.getRequestIds());
-//
-//        // В ТЗ: "статус можно изменить только у заявок, находящихся в состоянии ожидания"
-//        for (ParticipationRequest r : requests) {
-//            if (!r.getStatus().equals(RequestStatus.PENDING)) {
-//                throw new ConditionsNotMetException("Only requests with PENDING status can be reviewed");
-//            }
-//            if (!r.getEvent().getId().equals(eventId)) {
-//                throw new ConditionsNotMetException("The requests are not related to event with id = " + eventId);
-//            }
-//        }
-//
-//        // "если для события лимит заявок равен 0 или отключена пре-модерация заявок, то подтверждение заявок не требуется"
-//        // т.е. такие случаи сюда не попадают вообще? или автоматом ставить CONFIRMED? или как это понимать?
-//
-//        List<ParticipationRequest> approved = new ArrayList<>();
-//        List<ParticipationRequest> rejected = new ArrayList<>();
-//
-//        long confirmedRequests = 0L;
-//        long limit = event.getParticipantLimit();
-//
-//        if ((!event.getRequestModeration() || event.getParticipantLimit() == 0)
-//                && updateRequest.getStatus().equals(RequestStatus.CONFIRMED)) {
-//            approved = requests;
-//        } else if (updateRequest.getStatus().equals(RequestStatus.REJECTED)) {
-//            rejected = requests;
-//        } else {
-//            confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
-//
-//            for (ParticipationRequest r : requests) {
-//                if (confirmedRequests < limit) {
-//                    approved.add(r);
-//                    confirmedRequests++;
-//                } else {
-//                    rejected.add(r);
-//                }
-//            }
-//        }
-//
-//        updateStatuses(approved, RequestStatus.CONFIRMED);
-//        updateStatuses(rejected, RequestStatus.REJECTED);
-//
-//        // "если при подтверждении данной заявки, лимит заявок для события исчерпан, то все неподтверждённые заявки необходимо отклонить"
-//        if (limit > 0 && confirmedRequests >= limit) {
-//            requestRepository.updateStatusByEventId(eventId, RequestStatus.PENDING, RequestStatus.REJECTED);
-//        }
-//
-//        return ParticipationRequestMapper.toEventRequestStatusUpdateResult(approved, rejected);
-        return null;
+        // ✅ Вызов через Feign Client
+        try {
+            return requestClient.updateRequestStatuses(eventId, updateRequest);
+        } catch (FeignException e) {
+            log.error("Failed to update request statuses for eventId={}, status={}", eventId, e.status());
+            throw new RuntimeException("Request service is currently unavailable", e);
+        }
     }
 
     @Override
@@ -396,6 +379,8 @@ public class EventServiceImpl implements EventService {
                 .map(event -> EventMapper.toEventShortDto(event, 0L, 0L))
                 .collect(Collectors.toList());
 
+        // ✅ Получаем количество подтвержденных заявок через Feign Client
+        enrichEventsWithConfirmedRequests(dtos);
         enrichEventsWithViews(dtos);
         enrichEventsListWithCommentsCount(dtos);
 
@@ -403,25 +388,39 @@ public class EventServiceImpl implements EventService {
     }
 
 
-    // todo меняем на вызов Feign Client к requests-service
-//    private void updateStatuses(List<ParticipationRequest> requests, RequestStatus status) {
-//        if (requests.isEmpty()) {
-//            return;
-//        }
-//        List<Long> ids = requests.stream()
-//                .map(ParticipationRequest::getId)
-//                .collect(Collectors.toList());
-//        int updated = requestRepository.updateStatusByIdIn(ids, status);
-//        if (updated != ids.size()) {
-//            throw new IllegalStateException(String.format(
-//                    "Failed to update all requests in the database. Total: %d, updated: %d",
-//                    ids.size(), updated));
-//        }
-//        requests.forEach(r -> r.setStatus(status));
-//    }
+    /**
+     * Обогащает список событий реализующих Requestable (EventShortDto, EventFullDto) количеством подтвержденных заявок
+     */
+    private void enrichEventsWithConfirmedRequests(List<? extends Requestable> events) {
+        if (events.isEmpty()) {
+            return;
+        }
+
+        List<Long> eventIds = events.stream()
+                .map(Requestable::getId)
+                .collect(Collectors.toList());
+
+        try {
+            Map<Long, Long> counts = requestClient.getConfirmedRequestsCounts(eventIds);
+            events.forEach(event ->
+                    event.setConfirmedRequests(counts.getOrDefault(event.getId(), 0L))
+            );
+        } catch (FeignException e) {
+            log.error("Failed to get confirmed requests counts for eventIds={}, status={}", eventIds, e.status());
+            events.forEach(event -> event.setConfirmedRequests(0L));
+        }
+    }
 
 
-    private <T extends Viewable> void enrichEventsWithViews(List<T> events) {
+    /**
+     * Обогащает одно событие количеством подтвержденных заявок
+     */
+    private void enrichEventWithConfirmedRequests(EventFullDto event) {
+        // ✅ Просто вызываем списковый метод с одним элементом
+        enrichEventsWithConfirmedRequests(List.of(event));
+    }
+
+    private void enrichEventsWithViews(List<? extends Viewable> events) {
         LocalDateTime minEventDate = events.stream()
                 .map(Viewable::getPublishedOn)
                 .filter(Objects::nonNull)
@@ -451,7 +450,6 @@ public class EventServiceImpl implements EventService {
 
         try {
             List<ViewStatsDto> stats = statsClient.get(statRequestParam);
-
             log.debug("Stats received from client: {}", stats);
 
             if (stats.size() == 1 && stats.getFirst().getHits() == -1) {
@@ -472,9 +470,7 @@ public class EventServiceImpl implements EventService {
     }
 
     private void enrichEventWithViews(EventFullDto event) {
-        String[] uris = {"/events/" + event.getId()};
-        Map<Long, Long> hits = fetchViews(uris, event.getPublishedOn());
-        event.setViews(hits.getOrDefault(event.getId(), 0L));
+        enrichEventsWithViews(List.of(event));
     }
 
     private Long extractEventIdFromUri(ViewStatsDto stat) {
