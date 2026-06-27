@@ -3,14 +3,13 @@ package ru.practicum.eventsService.event.dto;
 import lombok.RequiredArgsConstructor;
 import ru.practicum.common.dto.events.EventFullDto;
 import ru.practicum.common.dto.events.EventShortDto;
-import ru.practicum.common.dto.users.UserDto;
+import ru.practicum.common.dto.events.Location;
 import ru.practicum.common.dto.users.UserShortDto;
 import ru.practicum.eventsService.categories.dto.CategoryMapper;
 import ru.practicum.eventsService.categories.model.Category;
 import ru.practicum.eventsService.event.model.Event;
+import ru.practicum.eventsService.event.model.EventLocation;
 import ru.practicum.common.dto.events.EventState;
-import ru.practicum.userService.user.dto.UserMapper;
-import ru.practicum.userService.user.model.User;
 
 
 import java.time.LocalDateTime;
@@ -24,7 +23,7 @@ public class EventMapper {
                 .category(category)
                 .description(newEventDto.getDescription())
                 .eventDate(newEventDto.getEventDate())
-                .location(newEventDto.getLocation())
+                .location(toEventLocation(newEventDto.getLocation()))
                 .paid(newEventDto.getPaid() != null ? newEventDto.getPaid() : false)
                 .participantLimit(newEventDto.getParticipantLimit() != null ? newEventDto.getParticipantLimit() : 0)
                 .requestModeration(newEventDto.getRequestModeration() != null ? newEventDto.getRequestModeration() : true)
@@ -49,7 +48,7 @@ public class EventMapper {
             event.setEventDate(request.getEventDate());
         }
         if (request.getLocation() != null) {
-            event.setLocation(request.getLocation());
+            event.setLocation(toEventLocation(request.getLocation()));
         }
         if (request.getPaid() != null) {
             event.setPaid(request.getPaid());
@@ -79,7 +78,7 @@ public class EventMapper {
             event.setEventDate(request.getEventDate());
         }
         if (request.getLocation() != null) {
-            event.setLocation(request.getLocation());
+            event.setLocation(toEventLocation(request.getLocation()));
         }
         if (request.getPaid() != null) {
             event.setPaid(request.getPaid());
@@ -105,7 +104,7 @@ public class EventMapper {
                 .description(event.getDescription())
                 .eventDate(event.getEventDate())
                 .initiator(initiator)
-                .location(event.getLocation())
+                .location(toLocation(event.getLocation()))
                 .paid(event.getPaid())
                 .participantLimit(event.getParticipantLimit())
                 .publishedOn(event.getPublishedOn())
@@ -123,10 +122,39 @@ public class EventMapper {
                 .category(CategoryMapper.toCategoryDto(event.getCategory()))
                 .confirmedRequests(confirmedRequests)
                 .eventDate(event.getEventDate())
-                .initiator(UserMapper.toUserShortDto(event.getInitiatorId()))
+                .initiator(
+                        UserShortDto.builder()
+                                .id(event.getInitiatorId())
+                                .build()
+                )
                 .paid(event.getPaid())
                 .title(event.getTitle())
                 .views(views)
+                .build();
+    }
+
+
+
+    private static EventLocation toEventLocation(Location location) {
+        if (location == null) {
+            return null;
+        }
+
+        return EventLocation.builder()
+                .lat(location.getLat())
+                .lon(location.getLon())
+                .build();
+    }
+
+
+    private static Location toLocation(EventLocation location) {
+        if (location == null) {
+            return null;
+        }
+
+        return Location.builder()
+                .lat(location.getLat())
+                .lon(location.getLon())
                 .build();
     }
 }

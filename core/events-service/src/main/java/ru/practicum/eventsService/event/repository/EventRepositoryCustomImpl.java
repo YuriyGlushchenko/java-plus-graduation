@@ -8,13 +8,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import ru.practicum.common.dto.events.EventFullDto;
 import ru.practicum.common.dto.events.EventShortDto;
+import ru.practicum.common.dto.events.Location;
 import ru.practicum.common.dto.events.category.CategoryDto;
 import ru.practicum.common.dto.events.EventState;
 import ru.practicum.common.dto.users.UserShortDto;
 import ru.practicum.eventsService.event.dto.paramDto.EventRepositoryParam;
 import ru.practicum.eventsService.event.model.QEvent;
-
-
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -23,11 +22,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+
 @Repository
 @RequiredArgsConstructor
 public class EventRepositoryCustomImpl implements EventRepositoryCustom {
+
     private final JPAQueryFactory queryFactory;
+
     private final QEvent event = QEvent.event;
+
 
     @Override
     public List<EventShortDto> findEventsShortDto(EventRepositoryParam param) {
@@ -42,7 +45,10 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                         Projections.constructor(CategoryDto.class, event.category.id, event.category.name), // проекция в DTO
                         Expressions.asNumber(0L).as("confirmedRequests"), // confirmedRequests заполняется в сервисе через Feign Client.
                         event.eventDate,
-                        Projections.constructor(UserShortDto.class, event.initiatorId, event.initiator.name), // проекция в DTO
+                        Projections.constructor(UserShortDto.class,
+                                event.initiatorId,
+                                Expressions.nullExpression(String.class) // заглушка, name будет заполнен позже через Feign Client.
+                        ),
                         event.paid,
                         event.publishedOn,
                         event.title,
@@ -55,19 +61,12 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                         event.id, // нужен только .groupBy(event.id), но для postgres обязательно перечислять в groupBy все поля из select
                         event.category.id,
                         event.category.name,
-                        event.initiator.id,
-                        event.initiator.name,
+                        event.initiatorId,
                         event.paid,
                         event.title
                 );
 
-        // добавляем фильтрацию в запрос, если требуются только доступные события
-        // if (param.isOnlyAvailable()) {
-        //     query.having(
-        //             event.participantLimit.eq(0)
-        //                     .or(request.count().lt(event.participantLimit))
-        //     );
-        // }
+        // фильтрация onlyAvailable теперь обрабатывается в сервисе, т.к. больше нет связи с request
 
         return query
                 .orderBy(event.eventDate.asc()) // сортируем сразу по дате, если нужна по views, то потом в сервисе переделываем
@@ -94,9 +93,15 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                                 event.createdOn,
                                 event.description,
                                 event.eventDate,
-                                //  Инициатор c типом User -> создаём UserShortDto через проекцию
-                                Projections.constructor(UserShortDto.class, event.initiator.id, event.initiator.name),
-                                event.location, // в Event это @Embedded поле Location, а в таблице две колонки lat и lon
+                                Projections.constructor(UserShortDto.class,
+                                        event.initiatorId,
+                                        Expressions.nullExpression(String.class)  // теперь нет связи с User, заглушка
+                                ),
+                                Projections.constructor(
+                                        Location.class, // в Event это @Embedded поле EventLocation, в таблице две колонки lat и lon
+                                        event.location.lat,
+                                        event.location.lon
+                                ),
                                 event.paid,
                                 event.participantLimit,
                                 event.publishedOn,
@@ -112,9 +117,9 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                                 event.id, // нужен только .groupBy(event.id), но для postgres обязательно перечислять в groupBy все поля из select
                                 event.category.id,
                                 event.category.name,
-                                event.initiator.id,
-                                event.initiator.name,
-                                event.location,
+                                event.initiatorId,
+                                event.location.lat,
+                                event.location.lon,
                                 event.paid,
                                 event.participantLimit,
                                 event.publishedOn,
@@ -125,6 +130,8 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                         .fetchOne()
         );
     }
+
+
 
     @Override
     public List<EventFullDto> findEventsFullDto(EventRepositoryParam param) {
@@ -144,10 +151,14 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                         event.description,
                         event.eventDate,
                         Projections.constructor(UserShortDto.class,
-                                event.initiator.id,
-                                event.initiator.name
+                                event.initiatorId,
+                                Expressions.nullExpression(String.class)
                         ),
-                        event.location,
+                        Projections.constructor(
+                                Location.class,
+                                event.location.lat,
+                                event.location.lon
+                        ),
                         event.paid,
                         event.participantLimit,
                         event.publishedOn,
@@ -163,9 +174,9 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                         event.id, // нужен только .groupBy(event.id), но для postgres обязательно перечислять в groupBy все поля из select
                         event.category.id,
                         event.category.name,
-                        event.initiator.id,
-                        event.initiator.name,
-                        event.location,
+                        event.initiatorId,
+                        event.location.lat,
+                        event.location.lon,
                         event.paid,
                         event.participantLimit,
                         event.publishedOn,
@@ -174,12 +185,7 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
                         event.title
                 );
 
-        // if (param.isOnlyAvailable()) {
-        //     query.having(
-        //             event.participantLimit.eq(0)
-        //                     .or(request.count().lt(event.participantLimit))
-        //     );
-        // }
+        // onlyAvailable теперь в сервисе
 
         return query
                 .orderBy(event.eventDate.asc())
@@ -212,7 +218,7 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
         }
 
         if (param.hasUsers()) {
-            predicate.and(event.initiator.id.in(param.getUsers()));
+            predicate.and(event.initiatorId.in(param.getUsers()));
         }
 
         if (param.hasIds()) {
