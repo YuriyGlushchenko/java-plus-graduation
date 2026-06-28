@@ -4,5 +4,5 @@ import org.springframework.cloud.openfeign.FeignClient;
 import ru.practicum.common.apiContracts.CommentsApiContract;
 
 @FeignClient(name = "comments-service")
-public interface CommentClint extends CommentsApiContract {
+public interface CommentClient extends CommentsApiContract {
 }

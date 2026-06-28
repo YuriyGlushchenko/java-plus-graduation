@@ -9,17 +9,17 @@ import java.util.List;
 import java.util.Map;
 
 public interface ParticipationRequestApiContract {
-    @GetMapping("/event/{eventId}/count")
+    @GetMapping("/api/requests/event/{eventId}/count")
     Long getConfirmedRequestsCount(@PathVariable Long eventId);
 
-    @GetMapping("/event/{eventId}")
+    @GetMapping("/api/requests/event/{eventId}")
     List<ParticipationRequestDto> getRequestsByEventId(@PathVariable Long eventId);
 
-    @PatchMapping("/event/{eventId}")
+    @PatchMapping("/api/requests/event/{eventId}")
     EventRequestStatusUpdateResult updateRequestStatuses(
             @PathVariable Long eventId,
             @RequestBody EventRequestStatusUpdateRequest request);
 
-    @PostMapping("/events/count")
+    @PostMapping("/api/requests/events/count")
     Map<Long, Long> getConfirmedRequestsCounts(@RequestBody List<Long> eventIds);
 }

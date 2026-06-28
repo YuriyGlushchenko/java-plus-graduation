@@ -15,7 +15,7 @@ import ru.practicum.common.exceptions.exceptions.ConditionsNotMetException;
 import ru.practicum.common.exceptions.exceptions.NotFoundException;
 import ru.practicum.eventsService.categories.model.Category;
 import ru.practicum.eventsService.categories.repository.CategoryRepository;
-import ru.practicum.eventsService.client.CommentClint;
+import ru.practicum.eventsService.client.CommentClient;
 import ru.practicum.eventsService.client.ParticipationRequestClient;
 import ru.practicum.eventsService.client.UserClient;
 import ru.practicum.eventsService.event.dto.EventMapper;
@@ -46,7 +46,7 @@ public class EventServiceImpl implements EventService {
     private final StatsClient statsClient;
     private final UserClient userClient;
     private final ParticipationRequestClient requestClient;
-    private final CommentClint commentClint;
+    private final CommentClient commentClient;
 
     @Transactional
     @Override
@@ -489,7 +489,7 @@ public class EventServiceImpl implements EventService {
                 .map(Commentable::getId)
                 .collect(Collectors.toList());
 
-        Map<Long, Long> countsMap = commentClint.getCommentCountsByEventIds(ids, CommentStatus.APPROVED);
+        Map<Long, Long> countsMap = commentClient.getCommentCountsByEventIds(ids, CommentStatus.APPROVED);
 
         eventDtos.forEach(item -> item.setCommentsCount(countsMap.getOrDefault(item.getId(), 0L)));
     }

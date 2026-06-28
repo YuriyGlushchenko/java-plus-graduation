@@ -8,6 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 public interface CommentsApiContract {
-    @GetMapping("/counts")
+    @GetMapping("/api/comments/counts")
     Map<Long, Long> getCommentCountsByEventIds(@RequestParam List<Long> eventIds, @RequestParam CommentStatus status);
 }

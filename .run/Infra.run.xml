@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Eureca + Config" type="CompoundRunConfigurationType">
+  <configuration default="false" name="Infra" type="CompoundRunConfigurationType">
     <toRun name="ConfigServer" type="Application" />
     <toRun name="EurecaApp" type="Application" />
     <method v="2" />

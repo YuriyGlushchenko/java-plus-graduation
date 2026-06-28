@@ -22,5 +22,5 @@ spring:
 
 logging:
   level:
-    ru.practicum.ewm: DEBUG
+    ru.practicum.userService.user: DEBUG
     org.hibernate.SQL: OFF

@@ -5,6 +5,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import ru.practicum.common.dto.events.EventBaseDto;
 
 public interface EventApiContract {
-    @GetMapping("/{id}")
+    @GetMapping("api/events/{id}")
     EventBaseDto getBaseEventInfo(@PathVariable long id);
 }

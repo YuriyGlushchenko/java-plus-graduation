@@ -12,15 +12,15 @@ import java.util.Map;
 
 public interface UserApiContract {
 
-    @GetMapping("/{userId}")
+    @GetMapping("/api/users/{userId}")
     UserDto getUserById(@PathVariable long userId);
 
-    @GetMapping("/{userId}/short")
+    @GetMapping("/api/users/{userId}/short")
     UserShortDto getUserShortById(@PathVariable long userId);
 
-    @GetMapping("/{userId}/exist")
+    @GetMapping("/api/users/{userId}/exist")
     Boolean isUserExist(@PathVariable long userId);
 
-    @PostMapping("/batch")
+    @PostMapping("/api/users/batch")
     public Map<Long, UserShortDto> getUsersShortByIds(@RequestBody List<Long> userIds);
 }
