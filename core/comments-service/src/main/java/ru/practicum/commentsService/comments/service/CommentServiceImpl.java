@@ -49,7 +49,7 @@ public class CommentServiceImpl implements CommentService {
             return Collections.emptyList();
         }
 
-        Map<Long, UserShortDto> userMap = fetchUsersFromComments(comments);
+        Map<Long, UserShortDto> userMap = getUsersDataMap(comments);
 
         return comments.stream()
                 .map(comment -> {
@@ -130,7 +130,7 @@ public class CommentServiceImpl implements CommentService {
             return Collections.emptyList();
         }
 
-        Map<Long, UserShortDto> userMap = fetchUsersFromComments(comments);
+        Map<Long, UserShortDto> userMap = getUsersDataMap(comments);
 
         return comments.stream()
                 .map(comment -> {
@@ -149,7 +149,7 @@ public class CommentServiceImpl implements CommentService {
     public CommentFullDto moderateComment(Long moderatorId, Long commentId, UpdateCommentAdminRequest dto) {
         Comment comment = getCommentById(commentId);
 
-        Map<Long, UserShortDto> userMap = fetchUsersFromComments(List.of(comment), moderatorId);
+        Map<Long, UserShortDto> userMap = getUsersDataMap(List.of(comment), moderatorId);
 
         UserShortDto author = userMap.get(comment.getAuthorId());
         if (author == null) {
@@ -171,7 +171,7 @@ public class CommentServiceImpl implements CommentService {
     public void deleteCommentByAdmin(Long moderatorId, Long commentId) {
         Comment comment = getCommentById(commentId);
 
-        Map<Long, UserShortDto> userMap = fetchUsersFromComments(List.of(comment), moderatorId);
+        Map<Long, UserShortDto> userMap = getUsersDataMap(List.of(comment), moderatorId);
 
         UserShortDto moderator = userMap.get(moderatorId);
         if (moderator == null) {
@@ -235,7 +235,7 @@ public class CommentServiceImpl implements CommentService {
      * Собирает все ID авторов и модераторов из списка комментариев
      * и загружает их одним запросом в сервис пользователей.
      */
-    private Map<Long, UserShortDto> fetchUsersFromComments(List<Comment> comments, Long... extraUserIds) {
+    private Map<Long, UserShortDto> getUsersDataMap(List<Comment> comments, Long... extraUserIds) {
         if ((comments == null || comments.isEmpty()) && (extraUserIds == null || extraUserIds.length == 0)) {
             return Map.of();
         }
