@@ -1,11 +1,11 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="EwmMainServiceApp-dev" type="Application" factoryName="Application">
-    <option name="MAIN_CLASS_NAME" value="ru.practicum.ewm.EwmMainServiceApp" />
-    <module name="main-service" />
+  <configuration default="false" name="Users-DEV" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="ru.practicum.userService.user.UsersServiceApp" />
+    <module name="users-service" />
     <option name="VM_PARAMETERS" value="-Dspring.profiles.active=dev" />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="ru.practicum.ewm.*" />
+        <option name="PATTERN" value="ru.practicum.stats.server.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>

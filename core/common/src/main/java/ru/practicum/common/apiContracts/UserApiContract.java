@@ -15,9 +15,10 @@ public interface UserApiContract {
     @GetMapping("/{userId}")
     UserDto getUserById(@PathVariable long userId);
 
-    @GetMapping("/{userId}")
+    @GetMapping("/{userId}/short")
     UserShortDto getUserShortById(@PathVariable long userId);
 
+    @GetMapping("/{userId}/exist")
     Boolean isUserExist(@PathVariable long userId);
 
     @PostMapping("/batch")

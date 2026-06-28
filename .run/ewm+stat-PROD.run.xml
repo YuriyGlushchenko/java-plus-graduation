@@ -1,7 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="ewm+stat-PROD" type="CompoundRunConfigurationType">
-    <toRun name="EwmMainServiceApp" type="Application" />
-    <toRun name="StatsServer" type="Application" />
-    <method v="2" />
-  </configuration>
-</component>

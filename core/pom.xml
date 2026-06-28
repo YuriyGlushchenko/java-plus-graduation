@@ -11,7 +11,6 @@
 
     <packaging>pom</packaging>
     <modules>
-        <module>main-service</module>
         <module>events-service</module>
         <module>requests-service</module>
         <module>users-service</module>

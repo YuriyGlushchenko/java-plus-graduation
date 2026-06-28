@@ -43,6 +43,7 @@ public class InternalUserController implements ru.practicum.common.apiContracts.
     }
 
     @Override
+    @GetMapping("/{userId}/short")
     public UserShortDto getUserShortById(long userId) {
         log.debug("Request to get user short info: id={}", userId);
 
