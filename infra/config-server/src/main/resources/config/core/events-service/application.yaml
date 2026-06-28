@@ -24,6 +24,8 @@ spring:
 
   cloud:
     openfeign:
+      okhttp:
+        enabled: true
       circuitbreaker:
         enabled: true
 
