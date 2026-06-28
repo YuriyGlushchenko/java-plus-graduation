@@ -4,9 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.eventsService.event.model.EventSort;
 import ru.practicum.common.dto.events.EventState;
-
+import ru.practicum.eventsService.event.model.EventSort;
 
 import java.time.LocalDateTime;
 import java.util.List;

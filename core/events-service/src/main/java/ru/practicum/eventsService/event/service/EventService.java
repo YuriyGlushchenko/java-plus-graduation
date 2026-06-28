@@ -1,13 +1,14 @@
 package ru.practicum.eventsService.event.service;
 
 
-
 import ru.practicum.common.dto.events.EventFullDto;
 import ru.practicum.common.dto.events.EventShortDto;
 import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateRequest;
 import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateResult;
 import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;
-import ru.practicum.eventsService.event.dto.*;
+import ru.practicum.eventsService.event.dto.NewEventDto;
+import ru.practicum.eventsService.event.dto.UpdateEventAdminRequest;
+import ru.practicum.eventsService.event.dto.UpdateEventUserRequest;
 import ru.practicum.eventsService.event.dto.paramDto.AdminUserEventParam;
 import ru.practicum.eventsService.event.dto.paramDto.PublicUserEventParam;
 

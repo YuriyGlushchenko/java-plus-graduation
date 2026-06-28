@@ -1,8 +1,9 @@
 package ru.practicum.common.apiContracts;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Positive;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import ru.practicum.common.dto.users.UserDto;
 import ru.practicum.common.dto.users.UserShortDto;
 

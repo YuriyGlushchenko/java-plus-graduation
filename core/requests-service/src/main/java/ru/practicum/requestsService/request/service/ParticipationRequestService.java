@@ -1,7 +1,6 @@
 package ru.practicum.requestsService.request.service;
 
 
-
 import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateRequest;
 import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateResult;
 import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;

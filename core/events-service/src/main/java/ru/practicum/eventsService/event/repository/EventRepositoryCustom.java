@@ -1,7 +1,6 @@
 package ru.practicum.eventsService.event.repository;
 
 
-
 import ru.practicum.common.dto.events.EventFullDto;
 import ru.practicum.common.dto.events.EventShortDto;
 import ru.practicum.eventsService.event.dto.paramDto.EventRepositoryParam;

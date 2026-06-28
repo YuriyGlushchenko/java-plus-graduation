@@ -14,7 +14,6 @@ import ru.practicum.common.dto.events.EventShortDto;
 import ru.practicum.eventsService.event.dto.paramDto.PublicUserEventParam;
 import ru.practicum.eventsService.event.service.EventService;
 
-
 import java.util.List;
 
 @Slf4j

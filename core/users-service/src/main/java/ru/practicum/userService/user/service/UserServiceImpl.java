@@ -90,8 +90,8 @@ public class UserServiceImpl implements UserService {
 
         return users.stream()
                 .collect(Collectors.toMap(
-                        User::getId,
-                        UserMapper::toUserShortDto)
+                                User::getId,
+                                UserMapper::toUserShortDto)
 //                        user -> new UserShortDto(user.getId(), user.getName())
                 );
     }

@@ -2,9 +2,9 @@ package ru.practicum.commentsService.comments.dto;
 
 import lombok.RequiredArgsConstructor;
 import ru.practicum.commentsService.comments.model.Comment;
-import ru.practicum.common.dto.comments.CommentStatus;
 import ru.practicum.common.dto.comments.CommentFullDto;
 import ru.practicum.common.dto.comments.CommentShortDto;
+import ru.practicum.common.dto.comments.CommentStatus;
 import ru.practicum.common.dto.users.UserShortDto;
 
 import java.time.LocalDateTime;

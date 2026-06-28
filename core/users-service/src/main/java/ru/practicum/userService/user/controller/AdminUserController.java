@@ -12,7 +12,6 @@ import ru.practicum.common.dto.users.UserDto;
 import ru.practicum.userService.user.dto.NewUserRequest;
 import ru.practicum.userService.user.service.UserService;
 
-
 import java.util.List;
 
 @Slf4j

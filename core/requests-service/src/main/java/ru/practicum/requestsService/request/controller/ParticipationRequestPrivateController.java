@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;
 import ru.practicum.requestsService.request.service.ParticipationRequestService;
 
-
 import java.util.List;
 
 @Slf4j

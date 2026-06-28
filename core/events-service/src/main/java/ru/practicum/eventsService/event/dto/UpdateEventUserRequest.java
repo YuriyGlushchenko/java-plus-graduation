@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 import ru.practicum.common.dto.events.Location;
 import ru.practicum.eventsService.event.model.UserStateAction;
 
-
 import java.time.LocalDateTime;
 
 @Data

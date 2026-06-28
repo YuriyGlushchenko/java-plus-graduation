@@ -60,5 +60,5 @@ public class Event {
     private Category category;
 
     @Embedded
-    private EventLocation  location;
+    private EventLocation location;
 }

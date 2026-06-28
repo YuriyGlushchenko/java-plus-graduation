@@ -183,9 +183,6 @@ public class CommentServiceImpl implements CommentService {
     }
 
 
-
-
-
     private Comment getCommentById(Long commentId) {
         return commentRepository.findById(commentId)
                 .orElseThrow(() -> new NotFoundException("Comment with id=" + commentId + " not found"));

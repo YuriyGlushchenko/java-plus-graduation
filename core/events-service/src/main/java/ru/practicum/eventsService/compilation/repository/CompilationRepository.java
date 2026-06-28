@@ -1,7 +1,6 @@
 package ru.practicum.eventsService.compilation.repository;
 
 
-
 import ru.practicum.eventsService.compilation.model.Compilation;
 
 import java.util.List;

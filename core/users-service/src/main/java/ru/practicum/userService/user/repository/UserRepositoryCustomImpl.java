@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository;
 import ru.practicum.common.dto.users.UserDto;
 import ru.practicum.userService.user.model.QUser;
 
-
 import java.util.List;
 
 @Repository

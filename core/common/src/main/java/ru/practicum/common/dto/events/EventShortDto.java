@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 import ru.practicum.common.dto.events.category.CategoryDto;
 import ru.practicum.common.dto.users.UserShortDto;
 
-
 import java.time.LocalDateTime;
 
 @Data

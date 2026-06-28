@@ -2,15 +2,14 @@ package ru.practicum.eventsService.categories.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.practicum.common.dto.events.category.CategoryDto;
 import ru.practicum.common.exceptions.exceptions.ConditionsNotMetException;
 import ru.practicum.common.exceptions.exceptions.NotFoundException;
-import ru.practicum.common.dto.events.category.CategoryDto;
 import ru.practicum.eventsService.categories.dto.CategoryMapper;
 import ru.practicum.eventsService.categories.dto.NewCategoryDto;
 import ru.practicum.eventsService.categories.model.Category;
 import ru.practicum.eventsService.categories.repository.CategoryRepository;
 import ru.practicum.eventsService.event.repository.EventRepository;
-
 
 import java.util.List;
 

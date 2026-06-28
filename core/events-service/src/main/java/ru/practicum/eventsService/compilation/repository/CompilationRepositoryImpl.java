@@ -9,7 +9,6 @@ import org.springframework.stereotype.Repository;
 import ru.practicum.eventsService.compilation.model.Compilation;
 import ru.practicum.eventsService.event.model.Event;
 
-
 import java.sql.PreparedStatement;
 import java.util.*;
 

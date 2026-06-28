@@ -7,7 +7,6 @@ import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;
 import ru.practicum.common.dto.participationRequest.RequestStatus;
 import ru.practicum.requestsService.request.model.ParticipationRequest;
 
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;

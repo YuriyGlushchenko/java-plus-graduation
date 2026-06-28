@@ -11,8 +11,6 @@ import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateRequ
 import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateResult;
 import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;
 import ru.practicum.common.dto.participationRequest.RequestStatus;
-
-
 import ru.practicum.common.dto.users.UserShortDto;
 import ru.practicum.common.exceptions.exceptions.ConditionsNotMetException;
 import ru.practicum.common.exceptions.exceptions.NotFoundException;
@@ -21,7 +19,6 @@ import ru.practicum.requestsService.request.client.UserClient;
 import ru.practicum.requestsService.request.dto.ParticipationRequestMapper;
 import ru.practicum.requestsService.request.model.ParticipationRequest;
 import ru.practicum.requestsService.request.repository.ParticipationRequestRepository;
-
 
 import java.util.ArrayList;
 import java.util.List;

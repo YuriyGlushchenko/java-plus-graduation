@@ -7,7 +7,6 @@ import org.springframework.data.repository.query.Param;
 import ru.practicum.common.dto.participationRequest.RequestStatus;
 import ru.practicum.requestsService.request.model.ParticipationRequest;
 
-
 import java.util.Collection;
 import java.util.List;
 

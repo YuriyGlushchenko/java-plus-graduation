@@ -2,9 +2,9 @@ package ru.practicum.commentsService.comments.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.practicum.common.dto.comments.CommentStatus;
 import ru.practicum.commentsService.comments.repository.CommentRepository;
 import ru.practicum.common.aop.annotation.Loggable;
+import ru.practicum.common.dto.comments.CommentStatus;
 
 import java.util.List;
 import java.util.Map;
@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class CommentInternalServiceImpl implements CommentInternalService{
+public class CommentInternalServiceImpl implements CommentInternalService {
 
     private final CommentRepository commentRepository;
 

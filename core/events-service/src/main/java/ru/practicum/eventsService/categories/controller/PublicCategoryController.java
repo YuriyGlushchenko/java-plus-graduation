@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.common.dto.events.category.CategoryDto;
 import ru.practicum.eventsService.categories.service.CategoryService;
 
-
 import java.util.List;
 
 @Validated

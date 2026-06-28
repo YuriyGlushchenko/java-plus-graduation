@@ -3,7 +3,6 @@ package ru.practicum.eventsService.event.dto.paramDto;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
-
 import java.time.LocalDateTime;
 
 public class DateRangeValidator implements ConstraintValidator<ValidDateRange, DateRangeValidatable> {

@@ -8,7 +8,6 @@ import ru.practicum.eventsService.categories.model.Category;
 import ru.practicum.eventsService.event.model.Event;
 import ru.practicum.eventsService.event.model.EventLocation;
 
-
 import java.time.LocalDateTime;
 
 @RequiredArgsConstructor
@@ -156,7 +155,6 @@ public class EventMapper {
                 .title(event.getTitle())
                 .build();
     }
-
 
 
     private static EventLocation toEventLocation(Location location) {

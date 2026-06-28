@@ -8,7 +8,6 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import ru.practicum.eventsService.categories.model.Category;
 
-
 import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.Objects;

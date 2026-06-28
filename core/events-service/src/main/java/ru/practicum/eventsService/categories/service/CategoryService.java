@@ -1,7 +1,6 @@
 package ru.practicum.eventsService.categories.service;
 
 
-
 import ru.practicum.common.dto.events.category.CategoryDto;
 import ru.practicum.eventsService.categories.dto.NewCategoryDto;
 

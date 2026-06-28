@@ -5,7 +5,6 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.eventsService.compilation.dto.CompilationDto;
 import ru.practicum.eventsService.compilation.service.CompilationService;
 
-
 import java.util.List;
 
 @RestController
