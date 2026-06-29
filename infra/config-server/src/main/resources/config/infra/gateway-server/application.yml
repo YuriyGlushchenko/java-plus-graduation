@@ -29,92 +29,92 @@ spring:
         response-timeout: 10s
 
       routes:
-        - id: comments-admin-service
-          uri: lb://comments-service
+        - id: comment-admin-service
+          uri: lb://comment-service
           predicates:
             - Path=/admin/comments/**
           filters:
             - StripPrefix=0
 
-        - id: comments-user-service
-          uri: lb://comments-service
+        - id: comment-user-service
+          uri: lb://comment-service
           predicates:
             - Path=/users/{userId}/comments/**
           filters:
             - StripPrefix=0
 
-        - id: comments-event-service
-          uri: lb://comments-service
+        - id: comment-event-service
+          uri: lb://comment-service
           predicates:
             - Path=/events/{eventId}/comments  # тонкое место, может пересекаться с - Path=/events/** в events-service
           filters:
             - StripPrefix=0
 
-        - id: comments-service
-          uri: lb://comments-service
+        - id: comment-service
+          uri: lb://comment-service
           predicates:
             - Path=/comments/{commentId}
           filters:
             - StripPrefix=0
 
         - id: events-admin-service
-          uri: lb://events-service
+          uri: lb://event-service
           predicates:
             - Path=/admin/events/**
           filters:
             - StripPrefix=0
 
         - id: events-user-service
-          uri: lb://events-service
+          uri: lb://event-service
           predicates:
             - Path=/users/{userId}/events/**
           filters:
             - StripPrefix=0
 
-        - id: events-service
-          uri: lb://events-service
+        - id: event-service
+          uri: lb://event-service
           predicates:
             - Path=/events/**
           filters:
             - StripPrefix=0
 
         - id: categories-admin-service
-          uri: lb://events-service
+          uri: lb://event-service
           predicates:
             - Path=/admin/categories/**
           filters:
             - StripPrefix=0
 
         - id: categories-service
-          uri: lb://events-service
+          uri: lb://event-service
           predicates:
             - Path=/categories/**
           filters:
             - StripPrefix=0
 
         - id: compilations-admin-service
-          uri: lb://events-service
+          uri: lb://event-service
           predicates:
             - Path=/admin/compilations/**
           filters:
             - StripPrefix=0
 
         - id: compilations-service
-          uri: lb://events-service
+          uri: lb://event-service
           predicates:
             - Path=/compilations/**
           filters:
             - StripPrefix=0
 
-        - id: users-service
-          uri: lb://users-service
+        - id: user-service
+          uri: lb://user-service
           predicates:
             - Path=/admin/users/**
           filters:
             - StripPrefix=0
 
         - id: requests-service
-          uri: lb://requests-service
+          uri: lb://request-service
           predicates:
             - Path=/users/{userId}/requests/**
           filters:
