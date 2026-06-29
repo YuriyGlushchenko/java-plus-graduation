@@ -15,6 +15,9 @@ import ru.practicum.eventsService.event.repository.EventRepository;
 public class InternalEventServiceImpl implements InternalEventService {
     private final EventRepository eventRepository;
 
+    /**
+     * Возвращает полную базовую информацию о событии без счетчиков просмотров, комментариев и заявок.
+     */
     @Override
     public EventBaseDto findEventBaseInfoById(long id) {
 

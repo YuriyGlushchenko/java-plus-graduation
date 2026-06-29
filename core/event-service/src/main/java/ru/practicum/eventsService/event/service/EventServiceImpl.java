@@ -64,6 +64,9 @@ public class EventServiceImpl implements EventService {
         return EventMapper.toEventFullDto(event, 0L, 0L, userDto);
     }
 
+    /**
+     * Возвращает список событий, созданных текущим пользователем.
+     */
     @Override
     public List<EventShortDto> getUserEvents(Long userId, int from, int size) {
         EventRepositoryParam param = EventRepositoryParam.builder()
@@ -81,6 +84,9 @@ public class EventServiceImpl implements EventService {
         return events;
     }
 
+    /**
+     * Возвращает список событий с фильтрацией. (Публичный запрос)
+     */
     @Override
     public List<EventShortDto> getEventsForPublicRequests(PublicUserEventParam userEventParam) {
         EventRepositoryParam param = EventRepositoryParam.fromUserEventParam(userEventParam);
@@ -90,7 +96,7 @@ public class EventServiceImpl implements EventService {
             return events;
         }
 
-        // Фильтр onlyAvailable теперь обрабатывается тут, а не в репозитории из-за разделения модулей
+        // Фильтр onlyAvailable теперь обрабатывается тут, а не сразу в запросе в репозитории из-за разделения модулей
         if (param.isOnlyAvailable()) {
             events = filterAvailableEvents(events);
         }
@@ -106,6 +112,9 @@ public class EventServiceImpl implements EventService {
         return events;
     }
 
+    /**
+     * Возвращает список событий с фильтрацией. (Запрос администратора)
+     */
     @Override
     public List<EventFullDto> getEventsForAdminRequests(AdminUserEventParam adminParam) {
         EventRepositoryParam param = EventRepositoryParam.fromAdminEventParam(adminParam);
@@ -119,6 +128,9 @@ public class EventServiceImpl implements EventService {
         return events;
     }
 
+    /**
+     * Возвращает полную информацию о событии, созданном текущим пользователем, по ID события.
+     */
     @Override
     public EventFullDto findUserEventByEventId(Long userId, Long eventId) {
         EventFullDto event = findEventFullDtoById(eventId);
@@ -131,6 +143,9 @@ public class EventServiceImpl implements EventService {
         return event;
     }
 
+    /**
+     * Обновляет событие, созданное текущим пользователем.
+     */
     @Override
     @Transactional
     public EventFullDto updateUserEvent(Long userId, Long eventId, UpdateEventUserRequest body) {
@@ -161,6 +176,9 @@ public class EventServiceImpl implements EventService {
         return buildEventFullDto(event);
     }
 
+    /**
+     * Обновляет любое событие (запрос администратора).
+     */
     @Override
     @Transactional
     public EventFullDto updateEventByAdmin(Long eventId, UpdateEventAdminRequest body) {
@@ -182,6 +200,9 @@ public class EventServiceImpl implements EventService {
         return buildEventFullDto(event);
     }
 
+    /**
+     * Возвращает опубликованное событие по его идентификатору.(Публичный запрос)
+     */
     @Override
     public EventFullDto findEventById(String uri, String ip, Long id) {
         EventFullDto event = findEventFullDtoById(id);
@@ -196,6 +217,9 @@ public class EventServiceImpl implements EventService {
         return event;
     }
 
+    /**
+     * Возвращает список заявок на участие в событии, созданном текущим пользователем.
+     */
     @Override
     public List<ParticipationRequestDto> getParticipationRequests(Long userId, Long eventId) {
         Event event = getEventById(eventId);
@@ -212,6 +236,9 @@ public class EventServiceImpl implements EventService {
         }
     }
 
+    /**
+     * Обновляет статусы заявок на участие в событии.
+     */
     @Override
     @Transactional
     public EventRequestStatusUpdateResult updateRequestStatuses(Long userId, Long eventId, EventRequestStatusUpdateRequest updateRequest) {
@@ -235,6 +262,9 @@ public class EventServiceImpl implements EventService {
         }
     }
 
+    /**
+     * Возвращает список кратких DTO событий по их идентификаторам.
+     */
     @Override
     public List<EventShortDto> getShortDtosByIds(Collection<Long> eventIds) {
         if (eventIds == null || eventIds.isEmpty()) {
@@ -251,10 +281,9 @@ public class EventServiceImpl implements EventService {
         return dtos;
     }
 
-
-
-
-
+    /**
+     * Ищет в репозитории и возвращает событие по его идентификатору.
+     */
     private Event getEventById(Long eventId) {
         return eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
@@ -265,7 +294,9 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
     }
 
-
+    /**
+     * Запрашивает через Feign-клиент и возвращает краткую информацию о пользователе по его идентификатору.
+     */
     private UserShortDto getUserById(Long userId) {
         try {
             UserShortDto user = userClient.getUserShortById(userId);
@@ -283,6 +314,10 @@ public class EventServiceImpl implements EventService {
         }
     }
 
+    /**
+     * Возвращает информацию в виде Map<userID, UserShortDto> обо всех пользователях, указанных в событиях из списка
+       в качестве инициаторов или модераторов
+     */
     private Map<Long, UserShortDto> getUsersDataMap(List<? extends Requestable> events) {
         if (events.isEmpty()) {
             return Map.of();
@@ -305,8 +340,9 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-
-
+    /**
+     * Проверяет, что дата события не раньше указанного количества часов от текущего момента.
+     */
     private void validateEventDate(LocalDateTime eventDate, int hours) {
         // "дата и время на которые намечено событие не может быть раньше, чем через два часа от текущего момента"
         LocalDateTime minDate = LocalDateTime.now().plusHours(hours);
@@ -315,6 +351,9 @@ public class EventServiceImpl implements EventService {
         }
     }
 
+    /**
+     * Проверяет дату события при обновлении.
+     */
     private void validateEventDateForUpdate(Event event, LocalDateTime newEventDate) {
         LocalDateTime minEventDateForUpdating = LocalDateTime.now().plusHours(2);
         if (event.getEventDate().isBefore(minEventDateForUpdating)) {
@@ -326,7 +365,9 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-
+    /**
+     * Обновляет статус события по действию пользователя.
+     */
     private void updateEventState(Event event, UserStateAction action) {
         switch (action) {
             case SEND_TO_REVIEW:
@@ -345,6 +386,9 @@ public class EventServiceImpl implements EventService {
         }
     }
 
+    /**
+     * Обрабатывает действие администратора над событием.
+     */
     private void processAdminEventAction(Event event, AdminStateAction action) {
         switch (action) {
             case PUBLISH_EVENT:
@@ -372,7 +416,10 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-       private List<EventShortDto> filterAvailableEvents(List<EventShortDto> events) {
+    /**
+     * Фильтрует список событий, оставляя только доступные (где есть свободные места).
+     */
+    private List<EventShortDto> filterAvailableEvents(List<EventShortDto> events) {
         List<Long> eventIds = events.stream()
                 .map(EventShortDto::getId)
                 .collect(Collectors.toList());
@@ -399,7 +446,9 @@ public class EventServiceImpl implements EventService {
                 .collect(Collectors.toList());
     }
 
-
+    /**
+     * Дополняет каждое событие из списка информацией о подтвержденных заявках, просмотрах и количестве комментариев.
+     */
     private void enrichEvents(List<? extends Enrichable> events) {
         if (events.isEmpty()) {
             return;
@@ -410,11 +459,12 @@ public class EventServiceImpl implements EventService {
     }
 
     private void enrichEvent(EventFullDto event) {
-        enrichEventWithConfirmedRequests(event);
-        enrichEventWithViews(event);
-        enrichEventsListWithCommentsCount(List.of(event));
+        enrichEvents(List.of(event));
     }
 
+    /**
+     * Дополняет каждое событие из списка количеством подтвержденных заявок.
+     */
     private void enrichEventsWithConfirmedRequests(List<? extends Requestable> events) {
         if (events.isEmpty()) {
             return;
@@ -439,6 +489,9 @@ public class EventServiceImpl implements EventService {
         enrichEventsWithConfirmedRequests(List.of(event));
     }
 
+    /**
+     * Дополняет каждое событие из списка  количеством просмотров.
+     */
     private void enrichEventsWithViews(List<? extends Viewable> events) {
         if (events.isEmpty()) {
             return;
@@ -465,6 +518,9 @@ public class EventServiceImpl implements EventService {
         enrichEventsWithViews(List.of(event));
     }
 
+    /**
+     * Дополняет каждое событие из списка  количеством комментариев.
+     */
     private void enrichEventsListWithCommentsCount(List<? extends Commentable> eventDtos) {
         if (eventDtos.isEmpty()) {
             return;
@@ -483,6 +539,9 @@ public class EventServiceImpl implements EventService {
         }
     }
 
+    /**
+     * Собирает полное DTO события с полными данными по просмотрам, заявкам, комментариям.
+     */
     private EventFullDto buildEventFullDto(Event event) {
         String[] uris = {"/events/" + event.getId()};
         Map<Long, Long> hits = fetchViews(uris, event.getEventDate());
@@ -497,6 +556,9 @@ public class EventServiceImpl implements EventService {
         return eventFullDto;
     }
 
+    /**
+     * Запрашивает в сервисе заявок через feign-клиент и возвращает количество подтвержденных заявок на событие.
+     */
     private Long getConfirmedRequestsCount(Long eventId) {
         try {
             return requestClient.getConfirmedRequestsCount(eventId);
@@ -506,6 +568,9 @@ public class EventServiceImpl implements EventService {
         }
     }
 
+    /**
+     * Запрашивает в сервисе статистики через feign-клиент и возвращает количество просмотров событий.
+     */
     private Map<Long, Long> fetchViews(String[] uris, LocalDateTime date) {
         ParamDto statRequestParam = ParamDto.builder()
                 .start(date)
@@ -537,11 +602,17 @@ public class EventServiceImpl implements EventService {
         }
     }
 
+    /**
+     * Извлекает идентификатор события (Id) из URI.
+     */
     private Long extractEventIdFromUri(ViewStatsDto stat) {
         String uri = stat.getUri(); // приходить должно в формате "/events/{id}"
         return Long.parseLong(uri.substring(uri.lastIndexOf('/') + 1));
     }
 
+    /**
+     * Отправляет информацию о просмотре события в сервис статистики.
+     */
     private void sendHit(String uri, String ip, LocalDateTime time) {
         EndpointHitDto hitDto = EndpointHitDto.builder()
                 .uri(uri)
