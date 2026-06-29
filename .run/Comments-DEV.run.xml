@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Comments-DEV" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="ru.practicum.commentsService.comments.CommentsServiceApp" />
-    <module name="comments-service" />
+    <module name="comment-service" />
     <option name="VM_PARAMETERS" value="-Dspring.profiles.active=dev" />
     <extension name="coverage">
       <pattern>

@@ -11,10 +11,10 @@
 
     <packaging>pom</packaging>
     <modules>
-        <module>events-service</module>
-        <module>requests-service</module>
-        <module>users-service</module>
-        <module>comments-service</module>
+        <module>event-service</module>
+        <module>request-service</module>
+        <module>user-service</module>
+        <module>comment-service</module>
         <module>common</module>
     </modules>
 

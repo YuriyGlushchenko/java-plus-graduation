@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Users-DEV" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="ru.practicum.userService.user.UsersServiceApp" />
-    <module name="users-service" />
+    <module name="user-service" />
     <option name="VM_PARAMETERS" value="-Dspring.profiles.active=dev" />
     <extension name="coverage">
       <pattern>

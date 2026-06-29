@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Events-DEV" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="ru.practicum.eventsService.EventsServiceApp" />
-    <module name="events-service" />
+    <module name="event-service" />
     <option name="VM_PARAMETERS" value="-Dspring.profiles.active=dev" />
     <extension name="coverage">
       <pattern>
