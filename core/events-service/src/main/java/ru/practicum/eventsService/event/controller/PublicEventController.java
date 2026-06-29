@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import ru.practicum.common.aop.annotation.Loggable;
 import ru.practicum.common.dto.events.EventFullDto;
 import ru.practicum.common.dto.events.EventShortDto;
 import ru.practicum.eventsService.event.dto.paramDto.PublicUserEventParam;
@@ -25,6 +26,7 @@ public class PublicEventController {
     private final EventService eventService;
 
     @GetMapping
+    @Loggable
     public List<EventShortDto> getEvents(@Valid PublicUserEventParam param,
                                          HttpServletRequest request) {
 
@@ -37,6 +39,7 @@ public class PublicEventController {
     }
 
     @GetMapping("/{id}")
+    @Loggable
     public EventFullDto getEvent(@PathVariable long id, HttpServletRequest request) {
 
         log.debug("Request to get event: uri={}, ip={}, id={}", request.getRequestURI(), request.getRemoteAddr(), id);

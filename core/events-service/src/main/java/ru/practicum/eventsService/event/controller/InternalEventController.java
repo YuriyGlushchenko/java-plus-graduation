@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import ru.practicum.common.aop.annotation.Loggable;
 import ru.practicum.common.dto.events.EventBaseDto;
 import ru.practicum.eventsService.event.service.InternalEventService;
 
@@ -21,6 +22,7 @@ public class InternalEventController implements ru.practicum.common.apiContracts
 
     @GetMapping("/{id}")
     @Override
+    @Loggable
     public EventBaseDto getBaseEventInfo(@PathVariable long id) {
 
         log.debug("Internal request to get event base info: id={}", id);

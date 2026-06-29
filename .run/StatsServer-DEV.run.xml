@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="StatsServer-dev" type="Application" factoryName="Application">
+  <configuration default="false" name="StatsServer-DEV" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="ru.practicum.stats.server.StatsServer" />
     <module name="stats-server" />
     <option name="VM_PARAMETERS" value="-Dspring.profiles.active=dev" />

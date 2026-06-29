@@ -4,7 +4,7 @@
     <toRun name="Events-DEV" type="Application" />
     <toRun name="Gateway" type="Application" />
     <toRun name="Requests-DEV" type="Application" />
-    <toRun name="StatsServer-dev" type="Application" />
+    <toRun name="StatsServer-DEV" type="Application" />
     <toRun name="Users-DEV" type="Application" />
     <method v="2" />
   </configuration>
