@@ -25,8 +25,10 @@ import ru.practicum.eventsService.event.dto.UpdateEventUserRequest;
 import ru.practicum.eventsService.event.dto.paramDto.AdminUserEventParam;
 import ru.practicum.eventsService.event.dto.paramDto.EventRepositoryParam;
 import ru.practicum.eventsService.event.dto.paramDto.PublicUserEventParam;
+import ru.practicum.eventsService.event.model.AdminStateAction;
 import ru.practicum.eventsService.event.model.Event;
 import ru.practicum.eventsService.event.model.EventSort;
+import ru.practicum.eventsService.event.model.UserStateAction;
 import ru.practicum.eventsService.event.repository.EventRepository;
 import ru.practicum.stat.client.StatsClient;
 import ru.practicum.stat.dto.EndpointHitDto;
@@ -51,33 +53,12 @@ public class EventServiceImpl implements EventService {
     @Transactional
     @Override
     public EventFullDto createEvent(Long userId, NewEventDto newEventDto) {
-        // "дата и время на которые намечено событие не может быть раньше, чем через два часа от текущего момента"
-        LocalDateTime minEventDate = LocalDateTime.now().plusHours(2);
-        if (newEventDto.getEventDate().isBefore(minEventDate)) {
-            throw new ConditionsNotMetException("Event date must be at least 2 hours from now");
-        }
+        validateEventDate(newEventDto.getEventDate(), 2);
 
-        // раз по условию пользователь аутентифицирован и авторизован, значит он точно есть
-        UserShortDto userDto;
-
-        try {
-            userDto = userClient.getUserShortById(userId);
-            if (userDto == null) {
-                throw new NotFoundException("User with id=" + userId + " not found");
-            }
-        } catch (FeignException e) {
-            if (e.status() == 404) {
-                throw new NotFoundException("User with id=" + userId + " was not found");
-            } else {
-                log.error("User service unavailable: status={}, error={}", e.status(), e.getMessage());
-                throw new RuntimeException("User service is currently unavailable", e);
-            }
-        }
-
+        UserShortDto userDto = getUserById(userId);
         Category cat = categoryRepository.getCategory(newEventDto.getCategory());
 
         Event event = EventMapper.toEvent(newEventDto, cat, userId);
-
         event = eventRepository.save(event);
 
         return EventMapper.toEventFullDto(event, 0L, 0L, userDto);
@@ -96,11 +77,7 @@ public class EventServiceImpl implements EventService {
             return events;
         }
 
-        // ✅ Получаем количество подтвержденных заявок через Feign Client
-        enrichEventsWithConfirmedRequests(events);
-        enrichEventsWithViews(events);
-        enrichEventsListWithCommentsCount(events);
-
+        enrichEvents(events);
         return events;
     }
 
@@ -115,28 +92,10 @@ public class EventServiceImpl implements EventService {
 
         // Фильтр onlyAvailable теперь обрабатывается тут, а не в репозитории из-за разделения модулей
         if (param.isOnlyAvailable()) {
-            List<Long> eventIds = events.stream().map(EventShortDto::getId).collect(Collectors.toList());
-
-            // Получаем лимиты из репозитория
-            Map<Long, Integer> limits = eventRepository.findParticipantLimitsByIdIn(eventIds);
-            Map<Long, Long> confirmedCounts = requestClient.getConfirmedRequestsCounts(eventIds);
-
-            events = events.stream()
-                    .filter(event -> {
-                        Integer limit = limits.getOrDefault(event.getId(), 0);
-                        if (limit == 0) {
-                            return true;
-                        }
-                        Long confirmed = confirmedCounts.getOrDefault(event.getId(), 0L);
-                        return confirmed < limit;
-                    })
-                    .collect(Collectors.toList());
+            events = filterAvailableEvents(events);
         }
 
-        // ✅ Получаем количество подтвержденных заявок через Feign Client
-        enrichEventsWithConfirmedRequests(events);
-        enrichEventsWithViews(events);
-        enrichEventsListWithCommentsCount(events);
+        enrichEvents(events);
 
         if (param.getSortOrDefault() == EventSort.VIEWS) {  // из репозитория приходят уже отсортированными по дате
             events.sort(Comparator.comparing(EventShortDto::getViews).reversed());
@@ -156,37 +115,26 @@ public class EventServiceImpl implements EventService {
             return events;
         }
 
-        // ✅ Получаем количество подтвержденных заявок через Feign Client
-        enrichEventsWithConfirmedRequests(events);
-        enrichEventsWithViews(events);
-        enrichEventsListWithCommentsCount(events);
-
+        enrichEvents(events);
         return events;
     }
 
     @Override
     public EventFullDto findUserEventByEventId(Long userId, Long eventId) {
-
-        EventFullDto event = eventRepository.findEventByIdFullDto(eventId)
-                .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
+        EventFullDto event = findEventFullDtoById(eventId);
 
         if (!event.getInitiator().getId().equals(userId)) {
             throw new NotFoundException("Event with id=" + eventId + " not found for user with id=" + userId);
         }
 
-        // ✅ Получаем количество подтвержденных заявок через Feign Client
-        enrichEventWithConfirmedRequests(event);
-        enrichEventWithViews(event);
-        enrichEventsListWithCommentsCount(List.of(event));
-
+        enrichEvent(event);
         return event;
     }
 
     @Override
     @Transactional
     public EventFullDto updateUserEvent(Long userId, Long eventId, UpdateEventUserRequest body) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
+        Event event = getEventById(eventId);
 
         if (!event.getInitiatorId().equals(userId)) {
             throw new NotFoundException("Event with id=" + eventId + " not found for user with id=" + userId);
@@ -196,35 +144,10 @@ public class EventServiceImpl implements EventService {
             throw new ConditionsNotMetException("Only events with CANCELED or PENDING state can be updated");
         }
 
-        // в спецификации не сказано четко, какую дату проверять, которая уже в событии или новую(если есть), проверим обе
-        LocalDateTime minEventDateForUpdating = LocalDateTime.now().plusHours(2);
-        if (event.getEventDate().isBefore(minEventDateForUpdating)) {
-            throw new ConditionsNotMetException("Unable to update event at last 2 hours before event date");
-        }
-
-        if (body.getEventDate() != null) {
-            LocalDateTime newEventDate = body.getEventDate();
-            if (newEventDate.isBefore(minEventDateForUpdating)) {
-                throw new ConditionsNotMetException("Unable to update event at last 2 hours before event date");
-            }
-        }
+        validateEventDateForUpdate(event, body.getEventDate());
 
         if (body.getStateAction() != null) {
-            switch (body.getStateAction()) {
-                case SEND_TO_REVIEW:
-                    if (event.getState() == EventState.CANCELED) {
-                        event.setState(EventState.PENDING);
-                    }
-                    break;
-                case CANCEL_REVIEW:
-                    if (event.getState() != EventState.PENDING) {
-                        throw new ConditionsNotMetException("Only events in PENDING state can be cancelled");
-                    }
-                    event.setState(EventState.CANCELED);
-                    break;
-                default:
-                    throw new ConditionsNotMetException("Unknown state action: " + body.getStateAction());
-            }
+            updateEventState(event, body.getStateAction());
         }
 
         Category cat = null;
@@ -235,26 +158,13 @@ public class EventServiceImpl implements EventService {
 
         event = eventRepository.save(event);
 
-        String[] uris = {"/events/" + event.getId()};
-        Map<Long, Long> hits = fetchViews(uris, event.getEventDate());
-        Long views = hits.getOrDefault(event.getId(), 0L);
-
-        // ✅ Получаем количество подтвержденных заявок через Feign Client
-        Long confirmedRequests = requestClient.getConfirmedRequestsCount(eventId);
-
-        UserShortDto initiator = userClient.getUserShortById(event.getInitiatorId());
-
-        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmedRequests, views, initiator);
-        enrichEventsListWithCommentsCount(List.of(eventFullDto));
-
-        return eventFullDto;
+        return buildEventFullDto(event);
     }
 
     @Override
     @Transactional
     public EventFullDto updateEventByAdmin(Long eventId, UpdateEventAdminRequest body) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
+        Event event = getEventById(eventId);
 
         Category category = null;
         if (body.getCategory() != null) {
@@ -264,74 +174,31 @@ public class EventServiceImpl implements EventService {
         EventMapper.updateEventFromAdminRequest(body, event, category);
 
         if (body.getStateAction() != null) {
-            switch (body.getStateAction()) {
-                case PUBLISH_EVENT:
-                    // "событие можно публиковать, только если оно в состоянии ожидания публикации (Ожидается код ошибки 409)"
-                    if (event.getState() != EventState.PENDING) {
-                        String msg = "Cannot publish the event because it's not in the right state: " + event.getState();
-                        throw new ConditionsNotMetException(msg);
-                    }
-                    // "дата начала изменяемого события должна быть не ранее чем за час от даты публикации. (Ожидается код ошибки 409)"
-                    // т.е. если собираемся опубликовать событие, то должен быть запас в час по времени
-                    LocalDateTime minPublishDate = LocalDateTime.now().plusHours(1);
-                    if (event.getEventDate().isBefore(minPublishDate)) {
-                        throw new ConditionsNotMetException("Event date must be at least 1 hour from now");
-                    }
-                    event.setState(EventState.PUBLISHED);
-                    event.setPublishedOn(LocalDateTime.now());
-                    break;
-
-                case REJECT_EVENT:
-                    // "событие можно отклонить, только если оно еще не опубликовано (Ожидается код ошибки 409)"
-                    if (event.getState() == EventState.PUBLISHED) {
-                        throw new ConditionsNotMetException("Cannot reject published event");
-                    }
-                    event.setState(EventState.CANCELED);
-                    break;
-
-                default:
-                    throw new ConditionsNotMetException("Unknown state action: " + body.getStateAction());
-            }
+            processAdminEventAction(event, body.getStateAction());
         }
 
         event = eventRepository.save(event);
 
-        String[] uris = {"/events/" + event.getId()};
-        Map<Long, Long> hits = fetchViews(uris, event.getEventDate());
-        Long views = hits.getOrDefault(event.getId(), 0L);
-
-        Long confirmedRequests = requestClient.getConfirmedRequestsCount(eventId);
-
-        UserShortDto initiator = userClient.getUserShortById(event.getInitiatorId());
-
-        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmedRequests, views, initiator);
-        enrichEventsListWithCommentsCount(List.of(eventFullDto));
-
-        return eventFullDto;
+        return buildEventFullDto(event);
     }
 
+    @Override
     public EventFullDto findEventById(String uri, String ip, Long id) {
-
-        EventFullDto event = eventRepository.findEventByIdFullDto(id)
-                .orElseThrow(() -> new NotFoundException("Event with id=" + id + " was not found"));
+        EventFullDto event = findEventFullDtoById(id);
 
         if (!event.getState().equals(EventState.PUBLISHED)) {
             throw new NotFoundException("Published Event with id=" + id + " was not found");
         }
 
         sendHit(uri, ip, LocalDateTime.now());
-
-        enrichEventWithConfirmedRequests(event);
-        enrichEventWithViews(event);
-        enrichEventsListWithCommentsCount(List.of(event));
+        enrichEvent(event);
 
         return event;
     }
 
     @Override
     public List<ParticipationRequestDto> getParticipationRequests(Long userId, Long eventId) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
+        Event event = getEventById(eventId);
 
         if (!event.getInitiatorId().equals(userId)) {
             throw new NotFoundException("Event with id=" + eventId + " not found for user with id=" + userId);
@@ -348,8 +215,7 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public EventRequestStatusUpdateResult updateRequestStatuses(Long userId, Long eventId, EventRequestStatusUpdateRequest updateRequest) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
+        Event event = getEventById(eventId);
 
         if (!event.getInitiatorId().equals(userId)) {
             throw new NotFoundException("Event with id=" + eventId + " not found for user with id=" + userId);
@@ -358,34 +224,197 @@ public class EventServiceImpl implements EventService {
         try {
             return requestClient.updateRequestStatuses(eventId, updateRequest);
         } catch (FeignException e) {
-            log.error("Failed to update request statuses for eventId={}, status={}", eventId, e.status());
-            throw new RuntimeException("Request service is currently unavailable", e);
+            if (e.status() == 409) {
+                log.warn("Request service conflict for eventId={}, body={}", eventId, e.contentUTF8());
+                throw new ConditionsNotMetException("The participant limit has been reached or request status is not PENDING");
+            } else {
+                log.error("Request service unavailable for eventId={}, status={}, body={}",
+                        eventId, e.status(), e.contentUTF8());
+                throw new RuntimeException("Request service is currently unavailable", e);
+            }
         }
     }
 
     @Override
-    public List<EventShortDto> getShortDtosByIds(Collection<Long> eventId) {
-        if (eventId == null || eventId.isEmpty()) {
+    public List<EventShortDto> getShortDtosByIds(Collection<Long> eventIds) {
+        if (eventIds == null || eventIds.isEmpty()) {
             return Collections.emptyList();
         }
 
-        List<Event> events = eventRepository.findAllByIdIn(eventId);
+        List<Event> events = eventRepository.findAllByIdIn(eventIds);
 
         List<EventShortDto> dtos = events.stream()
                 .map(event -> EventMapper.toEventShortDto(event, 0L, 0L))
                 .collect(Collectors.toList());
 
-        enrichEventsWithConfirmedRequests(dtos);
-        enrichEventsWithViews(dtos);
-        enrichEventsListWithCommentsCount(dtos);
-
+        enrichEvents(dtos);
         return dtos;
     }
 
 
-    /**
-     * Обогащает список событий реализующих Requestable (EventShortDto, EventFullDto) количеством подтвержденных заявок
-     */
+
+
+
+    private Event getEventById(Long eventId) {
+        return eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
+    }
+
+    private EventFullDto findEventFullDtoById(Long eventId) {
+        return eventRepository.findEventByIdFullDto(eventId)
+                .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
+    }
+
+
+    private UserShortDto getUserById(Long userId) {
+        try {
+            UserShortDto user = userClient.getUserShortById(userId);
+            if (user == null) {
+                throw new NotFoundException("User with id=" + userId + " not found");
+            }
+            return user;
+        } catch (FeignException e) {
+            if (e.status() == 404) {
+                throw new NotFoundException("User with id=" + userId + " was not found");
+            } else {
+                log.error("User service unavailable: status={}, error={}", e.status(), e.getMessage());
+                throw new RuntimeException("User service is currently unavailable", e);
+            }
+        }
+    }
+
+    private Map<Long, UserShortDto> getUsersDataMap(List<? extends Requestable> events) {
+        if (events.isEmpty()) {
+            return Map.of();
+        }
+
+        Set<Long> userIds = events.stream()
+                .map(Requestable::getId)
+                .collect(Collectors.toSet());
+
+        try {
+            Map<Long, UserShortDto> userMap = userClient.getUsersShortByIds(new ArrayList<>(userIds));
+            if (userMap == null) {
+                log.warn("User service returned null for userIds: {}", userIds);
+                return Map.of();
+            }
+            return userMap;
+        } catch (FeignException e) {
+            log.error("Failed to fetch users from user service: status={}, error={}", e.status(), e.getMessage());
+            throw new RuntimeException("User service is currently unavailable", e);
+        }
+    }
+
+
+
+    private void validateEventDate(LocalDateTime eventDate, int hours) {
+        // "дата и время на которые намечено событие не может быть раньше, чем через два часа от текущего момента"
+        LocalDateTime minDate = LocalDateTime.now().plusHours(hours);
+        if (eventDate.isBefore(minDate)) {
+            throw new ConditionsNotMetException("Event date must be at least " + hours + " hours from now");
+        }
+    }
+
+    private void validateEventDateForUpdate(Event event, LocalDateTime newEventDate) {
+        LocalDateTime minEventDateForUpdating = LocalDateTime.now().plusHours(2);
+        if (event.getEventDate().isBefore(minEventDateForUpdating)) {
+            throw new ConditionsNotMetException("Unable to update event at last 2 hours before event date");
+        }
+
+        if (newEventDate != null && newEventDate.isBefore(minEventDateForUpdating)) {
+            throw new ConditionsNotMetException("Unable to update event at last 2 hours before event date");
+        }
+    }
+
+
+    private void updateEventState(Event event, UserStateAction action) {
+        switch (action) {
+            case SEND_TO_REVIEW:
+                if (event.getState() == EventState.CANCELED) {
+                    event.setState(EventState.PENDING);
+                }
+                break;
+            case CANCEL_REVIEW:
+                if (event.getState() != EventState.PENDING) {
+                    throw new ConditionsNotMetException("Only events in PENDING state can be cancelled");
+                }
+                event.setState(EventState.CANCELED);
+                break;
+            default:
+                throw new ConditionsNotMetException("Unknown state action: " + action);
+        }
+    }
+
+    private void processAdminEventAction(Event event, AdminStateAction action) {
+        switch (action) {
+            case PUBLISH_EVENT:
+                // "событие можно публиковать, только если оно в состоянии ожидания публикации
+                if (event.getState() != EventState.PENDING) {
+                    throw new ConditionsNotMetException("Cannot publish the event because it's not in the right state: " + event.getState());
+                }
+                // "дата начала изменяемого события должна быть не ранее чем за час от даты публикации. (Ожидается код ошибки 409)"
+                // т.е. если собираемся опубликовать событие, то должен быть запас в час по времени
+                validateEventDate(event.getEventDate(), 1);
+                event.setState(EventState.PUBLISHED);
+                event.setPublishedOn(LocalDateTime.now());
+                break;
+
+            case REJECT_EVENT:
+                // "событие можно отклонить, только если оно еще не опубликовано (Ожидается код ошибки 409)"
+                if (event.getState() == EventState.PUBLISHED) {
+                    throw new ConditionsNotMetException("Cannot reject published event");
+                }
+                event.setState(EventState.CANCELED);
+                break;
+
+            default:
+                throw new ConditionsNotMetException("Unknown state action: " + action);
+        }
+    }
+
+       private List<EventShortDto> filterAvailableEvents(List<EventShortDto> events) {
+        List<Long> eventIds = events.stream()
+                .map(EventShortDto::getId)
+                .collect(Collectors.toList());
+
+        Map<Long, Integer> limits = eventRepository.findParticipantLimitsByIdIn(eventIds);
+        Map<Long, Long> confirmedCounts;
+
+        try {
+            confirmedCounts = requestClient.getConfirmedRequestsCounts(eventIds);
+        } catch (FeignException e) {
+            log.error("Failed to get confirmed requests counts for eventIds={}, status={}", eventIds, e.status());
+            throw new RuntimeException("Request service is currently unavailable", e);
+        }
+
+        return events.stream()
+                .filter(event -> {
+                    Integer limit = limits.getOrDefault(event.getId(), 0);
+                    if (limit == 0) {
+                        return true;
+                    }
+                    Long confirmed = confirmedCounts.getOrDefault(event.getId(), 0L);
+                    return confirmed < limit;
+                })
+                .collect(Collectors.toList());
+    }
+
+
+    private void enrichEvents(List<? extends Enrichable> events) {
+        if (events.isEmpty()) {
+            return;
+        }
+        enrichEventsWithConfirmedRequests(events);
+        enrichEventsWithViews(events);
+        enrichEventsListWithCommentsCount(events);
+    }
+
+    private void enrichEvent(EventFullDto event) {
+        enrichEventWithConfirmedRequests(event);
+        enrichEventWithViews(event);
+        enrichEventsListWithCommentsCount(List.of(event));
+    }
+
     private void enrichEventsWithConfirmedRequests(List<? extends Requestable> events) {
         if (events.isEmpty()) {
             return;
@@ -406,15 +435,15 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-
-    /**
-     * Обогащает одно событие количеством подтвержденных заявок
-     */
     private void enrichEventWithConfirmedRequests(EventFullDto event) {
         enrichEventsWithConfirmedRequests(List.of(event));
     }
 
     private void enrichEventsWithViews(List<? extends Viewable> events) {
+        if (events.isEmpty()) {
+            return;
+        }
+
         LocalDateTime minEventDate = events.stream()
                 .map(Viewable::getPublishedOn)
                 .filter(Objects::nonNull)
@@ -430,6 +459,51 @@ public class EventServiceImpl implements EventService {
         events.forEach(event ->
                 event.setViews(hits.getOrDefault(event.getId(), 0L))
         );
+    }
+
+    private void enrichEventWithViews(EventFullDto event) {
+        enrichEventsWithViews(List.of(event));
+    }
+
+    private void enrichEventsListWithCommentsCount(List<? extends Commentable> eventDtos) {
+        if (eventDtos.isEmpty()) {
+            return;
+        }
+
+        List<Long> ids = eventDtos.stream()
+                .map(Commentable::getId)
+                .collect(Collectors.toList());
+
+        try {
+            Map<Long, Long> countsMap = commentClient.getCommentCountsByEventIds(ids, CommentStatus.APPROVED);
+            eventDtos.forEach(item -> item.setCommentsCount(countsMap.getOrDefault(item.getId(), 0L)));
+        } catch (FeignException e) {
+            log.error("Failed to get comments counts for eventIds={}, status={}", ids, e.status());
+            eventDtos.forEach(item -> item.setCommentsCount(0L));
+        }
+    }
+
+    private EventFullDto buildEventFullDto(Event event) {
+        String[] uris = {"/events/" + event.getId()};
+        Map<Long, Long> hits = fetchViews(uris, event.getEventDate());
+        Long views = hits.getOrDefault(event.getId(), 0L);
+
+        Long confirmedRequests = getConfirmedRequestsCount(event.getId());
+        UserShortDto initiator = getUserById(event.getInitiatorId());
+
+        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmedRequests, views, initiator);
+        enrichEventsListWithCommentsCount(List.of(eventFullDto));
+
+        return eventFullDto;
+    }
+
+    private Long getConfirmedRequestsCount(Long eventId) {
+        try {
+            return requestClient.getConfirmedRequestsCount(eventId);
+        } catch (FeignException e) {
+            log.error("Failed to get confirmed requests count for eventId={}, status={}", eventId, e.status());
+            return 0L;
+        }
     }
 
     private Map<Long, Long> fetchViews(String[] uris, LocalDateTime date) {
@@ -463,10 +537,6 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-    private void enrichEventWithViews(EventFullDto event) {
-        enrichEventsWithViews(List.of(event));
-    }
-
     private Long extractEventIdFromUri(ViewStatsDto stat) {
         String uri = stat.getUri(); // приходить должно в формате "/events/{id}"
         return Long.parseLong(uri.substring(uri.lastIndexOf('/') + 1));
@@ -478,19 +548,6 @@ public class EventServiceImpl implements EventService {
                 .ip(ip)
                 .timestamp(time)
                 .build();
-
         statsClient.hit(hitDto);
-    }
-
-    private void enrichEventsListWithCommentsCount(List<? extends Commentable> eventDtos) {
-        if (eventDtos.isEmpty()) return;
-
-        List<Long> ids = eventDtos.stream()
-                .map(Commentable::getId)
-                .collect(Collectors.toList());
-
-        Map<Long, Long> countsMap = commentClient.getCommentCountsByEventIds(ids, CommentStatus.APPROVED);
-
-        eventDtos.forEach(item -> item.setCommentsCount(countsMap.getOrDefault(item.getId(), 0L)));
     }
 }

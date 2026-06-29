@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EventFullDto implements Viewable, Commentable, Requestable {
+public class EventFullDto implements Enrichable  {
     private Long id;
 
     @NotBlank
