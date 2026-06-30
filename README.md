@@ -1,8 +1,41 @@
-## Docker DB containers
-#### Создать контейнер с первой базой (например, stats)
-docker run --name postgres-ewm -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=stats -p 5432:5432 -d postgres:16.1
-####  Подключиться и создать вторую базу
-docker exec -it postgres-ewm psql -U postgres -c "CREATE DATABASE ewm;"
+## Микросервисы
+### Структура:
+Монолитное приложение разбито на 4 микросервиса:
+- event-service (включает в себя categories и compilations).
+- user-service
+- comment-service
+- request-service
+
+Так же создан отдельный модуль **commone**, включающий в себя все общие DTO, используемые для межсервисного взаимодействия .Туда же вынесено всё что используется сразу во всех микросервисах:
+- commone
+  - apiContracts - общие интерфейсы для межсервисного взаимодействия
+  - exceptions - ошибки и обработчик ошибок
+  - aop - используемые во всех сервисах аннотации для логирования
+  - dto - сами DTO.
+### Зависимости микросервисов друг от друга:
+- events-service зависит от:
+  - user-service
+  - request-service
+  - comment-service
+- user-service зависит от:
+  - ни от кого не зависит)
+- comment-service зависит от:
+  - event-service
+  - user-service
+- request-service зависит от:
+  - user-service
+  - event-service
+
+
+## Docker
+В docker-compose описаны сервисы для запуска баз данных для каждого приложения, а так же для запуска всех микросервисов.
+
+#### Либо, пример команд,  для создания docker-контейнера вручную:
+создать контейнер с  первой базой (например, stats)
+- docker run --name postgres-ewm -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=stats -p 5432:5432 -d postgres:16.1
+
+подключиться и создать вторую базу
+- docker exec -it postgres-ewm psql -U postgres -c "CREATE DATABASE ewm;"
 
 ## Commets
 ### Доп. фича:
