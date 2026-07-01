@@ -1,6 +1,5 @@
 package ru.practicum.commentsService.comments.service;
 
-import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -195,37 +194,20 @@ public class CommentServiceImpl implements CommentService {
 
 
     private UserShortDto getUserById(Long userId) {
-        try {
-            UserShortDto user = userClient.getUserShortById(userId);
-            if (user == null) {
-                throw new NotFoundException("User with id=" + userId + " not found");
-            }
-            return user;
-        } catch (FeignException e) {
-            if (e.status() == 404) {
-                throw new NotFoundException("User with id=" + userId + " was not found");
-            } else {
-                log.error("User service unavailable: status={}, error={}", e.status(), e.getMessage());
-                throw new RuntimeException("User service is currently unavailable", e);
-            }
+        UserShortDto user = userClient.getUserShortById(userId);
+        if (user == null) {
+            throw new NotFoundException("User with id=" + userId + " not found");
         }
+        return user;
+
     }
 
     private EventBaseDto getEventById(Long eventId) {
-        try {
-            EventBaseDto event = eventClient.getBaseEventInfo(eventId);
-            if (event == null) {
-                throw new NotFoundException("Event with id=" + eventId + " not found");
-            }
-            return event;
-        } catch (FeignException e) {
-            if (e.status() == 404) {
-                throw new NotFoundException("Event with id=" + eventId + " was not found");
-            } else {
-                log.error("Event service unavailable: status={}, error={}", e.status(), e.getMessage());
-                throw new RuntimeException("Event service is currently unavailable", e);
-            }
+        EventBaseDto event = eventClient.getBaseEventInfo(eventId);
+        if (event == null) {
+            throw new NotFoundException("Event with id=" + eventId + " not found");
         }
+        return event;
     }
 
     /**
@@ -261,16 +243,13 @@ public class CommentServiceImpl implements CommentService {
             return Map.of();
         }
 
-        try {
-            Map<Long, UserShortDto> userMap = userClient.getUsersDataByIds(new ArrayList<>(userIds));
-            if (userMap == null) {
-                log.warn("User service returned null for userIds: {}", userIds);
-                return Map.of();
-            }
-            return userMap;
-        } catch (FeignException e) {
-            log.error("Failed to fetch users from user service: status={}, error={}", e.status(), e.getMessage());
-            throw new RuntimeException("User service is currently unavailable", e);
+
+        Map<Long, UserShortDto> userMap = userClient.getUsersDataByIds(new ArrayList<>(userIds));
+        if (userMap == null) {
+            log.warn("User service returned null for userIds: {}", userIds);
+            return Map.of();
         }
+        return userMap;
+
     }
 }

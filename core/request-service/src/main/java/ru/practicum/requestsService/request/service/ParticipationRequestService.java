@@ -29,7 +29,7 @@ public interface ParticipationRequestService {
     /**
      * Изменить статусы заявок
      */
-    EventRequestStatusUpdateResult updateRequestStatuses(Long eventId, EventRequestStatusUpdateRequest request);
+    EventRequestStatusUpdateResult updateRequestStatuses(Long eventId, int limit, EventRequestStatusUpdateRequest request);
 
     /**
      * Получить количество подтвержденных заявок по списку событий

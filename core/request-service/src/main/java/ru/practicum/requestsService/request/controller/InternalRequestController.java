@@ -33,9 +33,10 @@ public class InternalRequestController implements ru.practicum.common.apiContrac
     @Override
     public EventRequestStatusUpdateResult updateRequestStatuses(
             @PathVariable Long eventId,
+            @RequestParam(defaultValue = "0") int limit,
             @RequestBody EventRequestStatusUpdateRequest request) {
         log.debug("Internal request: update request statuses for eventId={}", eventId);
-        return requestService.updateRequestStatuses(eventId, request);
+        return requestService.updateRequestStatuses(eventId, limit, request);
     }
 
     /**

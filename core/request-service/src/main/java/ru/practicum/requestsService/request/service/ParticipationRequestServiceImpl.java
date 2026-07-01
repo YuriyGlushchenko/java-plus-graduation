@@ -1,6 +1,5 @@
 package ru.practicum.requestsService.request.service;
 
-import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,34 +43,14 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
             throw new ConditionsNotMetException("Request already exists for this event");
         }
 
-        UserShortDto user;
-        try {
-            user = userClient.getUserShortById(userId);
-            if (user == null) {
-                throw new NotFoundException("User with id=" + userId + " not found");
-            }
-        } catch (FeignException e) {
-            if (e.status() == 404) {
-                throw new NotFoundException("User with id=" + userId + " was not found");
-            } else {
-                log.error("User service unavailable: status={}, error={}", e.status(), e.getMessage());
-                throw new RuntimeException("User service is currently unavailable", e);
-            }
+        UserShortDto user = userClient.getUserShortById(userId); // ошибки обрабатываются в FallbackFactory
+        if (user == null) {
+            throw new NotFoundException("User with id=" + userId + " not found");
         }
 
-        EventBaseDto event;
-        try {
-            event = eventClient.getBaseEventInfo(eventId);
-            if (event == null) {
-                throw new NotFoundException("Event with id=" + eventId + " not found");
-            }
-        } catch (FeignException e) {
-            if (e.status() == 404) {
-                throw new NotFoundException("Event with id=" + eventId + " was not found");
-            } else {
-                log.error("Event service unavailable: status={}, error={}", e.status(), e.getMessage());
-                throw new RuntimeException("Event service is currently unavailable", e);
-            }
+        EventBaseDto event = eventClient.getBaseEventInfo(eventId); // ошибки обрабатываются в FallbackFactory
+        if (event == null) {
+            throw new NotFoundException("Event with id=" + eventId + " not found");
         }
 
         if (event.getInitiator().getId().equals(userId)) {
@@ -145,7 +124,7 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
 
     @Override
     @Transactional
-    public EventRequestStatusUpdateResult updateRequestStatuses(Long eventId, EventRequestStatusUpdateRequest updateRequest) {
+    public EventRequestStatusUpdateResult updateRequestStatuses(Long eventId, int limit, EventRequestStatusUpdateRequest updateRequest) {
         // Проверяем, что заявки существуют
         List<ParticipationRequest> requests = requestRepository.findByIdIn(updateRequest.getRequestIds());
 
@@ -168,24 +147,6 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
 
         // Получаем текущее количество подтвержденных заявок
         long confirmedCount = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
-
-        // Получаем лимит
-        EventBaseDto event;
-        try {
-            event = eventClient.getBaseEventInfo(eventId);
-            if (event == null) {
-                throw new NotFoundException("Event with id=" + eventId + " not found");
-            }
-        } catch (FeignException e) {
-            if (e.status() == 404) {
-                throw new NotFoundException("Event with id=" + eventId + " was not found");
-            } else {
-                log.error("Event service unavailable: status={}, error={}", e.status(), e.getMessage());
-                throw new RuntimeException("Event service is currently unavailable", e);
-            }
-        }
-
-        long limit = event.getParticipantLimit() != null ? event.getParticipantLimit() : 0;
 
         if (updateRequest.getStatus().equals(RequestStatus.CONFIRMED)) {
             for (ParticipationRequest r : requests) {

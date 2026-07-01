@@ -232,7 +232,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * Обновляет статусы заявок на участие в событии.
+     * Обновляет статусы заявок на участие в событии текущего пользователя. (приватный вызов)
      */
     @Override
     @Transactional
@@ -243,7 +243,7 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Event with id=" + eventId + " not found for user with id=" + userId);
         }
 
-        return requestClient.updateRequestStatuses(eventId, updateRequest); // обработка ошибок в fallback фабрике
+        return requestClient.updateRequestStatuses(eventId,event.getParticipantLimit() ,updateRequest); // обработка ошибок в fallback фабрике
     }
 
     /**
@@ -448,15 +448,10 @@ public class EventServiceImpl implements EventService {
             return;
         }
 
-        List<Long> eventIds = events.stream()
-                .map(Requestable::getId)
-                .toList();
-
         Map<Long, Long> counts = getConfirmedRequestsCounts(events);
         events.forEach(event ->
                 event.setConfirmedRequests(counts.getOrDefault(event.getId(), 0L))
         );
-
     }
 
     /**

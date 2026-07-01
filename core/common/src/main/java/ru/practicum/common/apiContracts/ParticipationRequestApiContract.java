@@ -16,6 +16,7 @@ public interface ParticipationRequestApiContract {
     @PatchMapping("/api/requests/event/{eventId}")
     EventRequestStatusUpdateResult updateRequestStatuses(
             @PathVariable Long eventId,
+            @RequestParam(defaultValue = "0") int limit,
             @RequestBody EventRequestStatusUpdateRequest request);
 
     @PostMapping("/api/requests/events/count")

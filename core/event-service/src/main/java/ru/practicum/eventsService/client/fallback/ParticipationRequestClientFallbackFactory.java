@@ -42,6 +42,7 @@ public class ParticipationRequestClientFallbackFactory implements FallbackFactor
             @Override
             public EventRequestStatusUpdateResult updateRequestStatuses(
                     Long eventId,
+                    int limit,
                     EventRequestStatusUpdateRequest request) {
 
                 if (cause instanceof FeignException ex) {
