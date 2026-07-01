@@ -9,8 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 public interface ParticipationRequestApiContract {
-    @GetMapping("/api/requests/event/{eventId}/count")
-    Long getConfirmedRequestsCount(@PathVariable Long eventId);
 
     @GetMapping("/api/requests/event/{eventId}")
     List<ParticipationRequestDto> getRequestsByEventId(@PathVariable Long eventId);

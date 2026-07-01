@@ -228,12 +228,7 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Event with id=" + eventId + " not found for user with id=" + userId);
         }
 
-        try {
-            return requestClient.getRequestsByEventId(eventId);
-        } catch (FeignException e) {
-            log.error("Failed to get requests for eventId={}, status={}", eventId, e.status());
-            throw new RuntimeException("Request service is currently unavailable", e);
-        }
+        return requestClient.getRequestsByEventId(eventId); // вернет заглушку если недосупен сервис заявок
     }
 
     /**
@@ -248,18 +243,7 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Event with id=" + eventId + " not found for user with id=" + userId);
         }
 
-        try {
-            return requestClient.updateRequestStatuses(eventId, updateRequest);
-        } catch (FeignException e) {
-            if (e.status() == 409) {
-                log.warn("Request service conflict for eventId={}, body={}", eventId, e.contentUTF8());
-                throw new ConditionsNotMetException("The participant limit has been reached or request status is not PENDING");
-            } else {
-                log.error("Request service unavailable for eventId={}, status={}, body={}",
-                        eventId, e.status(), e.contentUTF8());
-                throw new RuntimeException("Request service is currently unavailable", e);
-            }
-        }
+        return requestClient.updateRequestStatuses(eventId, updateRequest); // обработка ошибок в fallback фабрике
     }
 
     /**
@@ -298,25 +282,18 @@ public class EventServiceImpl implements EventService {
      * Запрашивает через Feign-клиент и возвращает краткую информацию о пользователе по его идентификатору.
      */
     private UserShortDto getUserById(Long userId) {
-        try {
-            UserShortDto user = userClient.getUserShortById(userId);
-            if (user == null) {
-                throw new NotFoundException("User with id=" + userId + " not found");
-            }
-            return user;
-        } catch (FeignException e) {
-            if (e.status() == 404) {
-                throw new NotFoundException("User with id=" + userId + " was not found");
-            } else {
-                log.error("User service unavailable: status={}, error={}", e.status(), e.getMessage());
-                throw new RuntimeException("User service is currently unavailable", e);
-            }
+        UserShortDto user = userClient.getUserShortById(userId);
+
+        if (user == null) {
+            throw new NotFoundException("User with id=" + userId + " not found");
         }
+
+        return user;
     }
 
     /**
      * Возвращает информацию в виде Map<userID, UserShortDto> обо всех пользователях, указанных в событиях из списка
-       в качестве инициаторов или модераторов
+     * в качестве инициаторов или модераторов
      */
     private Map<Long, UserShortDto> getUsersDataMap(List<? extends Enrichable> events) {
         if (events.isEmpty()) {
@@ -324,20 +301,24 @@ public class EventServiceImpl implements EventService {
         }
 
         Set<Long> userIds = events.stream()
-                .map(Requestable::getId)
+                .map(Enrichable::getInitiator)
+                .filter(Objects::nonNull)
+                .map(UserShortDto::getId)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        try {
-            Map<Long, UserShortDto> userMap = userClient.getUsersDataByIds(new ArrayList<>(userIds));
-            if (userMap == null) {
-                log.warn("User service returned null for userIds: {}", userIds);
-                return Map.of();
-            }
-            return userMap;
-        } catch (FeignException e) {
-            log.error("Failed to fetch users from user service: status={}, error={}", e.status(), e.getMessage());
-            throw new RuntimeException("User service is currently unavailable", e);
+        if (userIds.isEmpty()) {
+            return Map.of();
         }
+
+        Map<Long, UserShortDto> userMap = userClient.getUsersDataByIds(new ArrayList<>(userIds));
+
+        if (userMap == null) {
+            log.warn("User service returned null for usersDataMap: {}", userIds);
+            return Map.of();
+        }
+
+        return userMap;
     }
 
     /**
@@ -427,12 +408,8 @@ public class EventServiceImpl implements EventService {
         Map<Long, Integer> limits = eventRepository.findParticipantLimitsByIdIn(eventIds);
         Map<Long, Long> confirmedCounts;
 
-        try {
-            confirmedCounts = requestClient.getConfirmedRequestsCounts(eventIds);
-        } catch (FeignException e) {
-            log.error("Failed to get confirmed requests counts for eventIds={}, status={}", eventIds, e.status());
-            throw new RuntimeException("Request service is currently unavailable", e);
-        }
+        confirmedCounts = getConfirmedRequestsCounts(events);
+
 
         return events.stream()
                 .filter(event -> {
@@ -473,17 +450,13 @@ public class EventServiceImpl implements EventService {
 
         List<Long> eventIds = events.stream()
                 .map(Requestable::getId)
-                .collect(Collectors.toList());
+                .toList();
 
-        try {
-            Map<Long, Long> counts = requestClient.getConfirmedRequestsCounts(eventIds);
-            events.forEach(event ->
-                    event.setConfirmedRequests(counts.getOrDefault(event.getId(), 0L))
-            );
-        } catch (FeignException e) {
-            log.error("Failed to get confirmed requests counts for eventIds={}, status={}", eventIds, e.status());
-            events.forEach(event -> event.setConfirmedRequests(0L));
-        }
+        Map<Long, Long> counts = getConfirmedRequestsCounts(events);
+        events.forEach(event ->
+                event.setConfirmedRequests(counts.getOrDefault(event.getId(), 0L))
+        );
+
     }
 
     /**
@@ -571,7 +544,7 @@ public class EventServiceImpl implements EventService {
         Map<Long, Long> hits = fetchViews(uris, event.getEventDate());
         Long views = hits.getOrDefault(event.getId(), 0L);
 
-        Long confirmedRequests = getConfirmedRequestsCount(event.getId());
+        Long confirmedRequests = getConfirmedRequestsCount(event);
         UserShortDto initiator = getUserById(event.getInitiatorId());
 
         EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmedRequests, views, initiator);
@@ -581,15 +554,36 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * Запрашивает в сервисе заявок через feign-клиент и возвращает количество подтвержденных заявок на событие.
+     * Возвращает количество подтвержденных заявок на событие.
      */
-    private Long getConfirmedRequestsCount(Long eventId) {
-        try {
-            return requestClient.getConfirmedRequestsCount(eventId);
-        } catch (FeignException e) {
-            log.error("Failed to get confirmed requests count for eventId={}, status={}", eventId, e.status());
-            return 0L;
+    private Long getConfirmedRequestsCount(Event event) {
+        List<EventShortDto> list = List.of(EventShortDto.builder().id(event.getId()).build());
+        return getConfirmedRequestsCounts(list).get(event.getId());
+    }
+
+
+    /**
+     * Получает количество подтвержденных заявок для списка событий.
+     * Возвращает Map<eventId, count>.
+     */
+    private Map<Long, Long> getConfirmedRequestsCounts(List<? extends Requestable> events) {
+        if (events == null || events.isEmpty()) {
+            return Collections.emptyMap();
         }
+
+        // Собираем ID событий
+        List<Long> eventIds = events.stream()
+                .map(Requestable::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        if (eventIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        return requestClient.getConfirmedRequestsCounts(eventIds); // вернет все -1 при недоступности сервиса
+
+
     }
 
     /**

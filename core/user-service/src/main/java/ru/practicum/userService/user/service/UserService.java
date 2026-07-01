@@ -16,10 +16,6 @@ public interface UserService {
 
     void deleteUser(Long userId);
 
-    UserDto findUser(Long userId);
-
-    Boolean isUserExist(Long userId);
-
     UserShortDto findUserShort(Long userId);
 
     Map<Long, UserShortDto> getUsersShortByIds(List<Long> userIds);

@@ -25,21 +25,6 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
 
     @Override
-    @Loggable
-    public UserDto findUser(Long userId) {
-        Optional<User> userOptional = userRepository.findById(userId);
-        if (userOptional.isEmpty()) {
-            throw new NotFoundException("User with id: " + userId + " not found");
-        }
-        return UserMapper.toUserDto(userOptional.get());
-    }
-
-    @Override
-    public Boolean isUserExist(Long userId) {
-        return userRepository.existsById(userId);
-    }
-
-    @Override
     public UserShortDto findUserShort(Long userId) {
         Optional<User> userOptional = userRepository.findById(userId);
         if (userOptional.isEmpty()) {

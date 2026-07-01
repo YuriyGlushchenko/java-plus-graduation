@@ -19,13 +19,6 @@ public class InternalRequestController implements ru.practicum.common.apiContrac
 
     private final ParticipationRequestService requestService;
 
-    @GetMapping("/event/{eventId}/count")
-    @Override
-    public Long getConfirmedRequestsCount(@PathVariable Long eventId) {
-        log.debug("Internal request: get confirmed requests count for eventId={}", eventId);
-        return requestService.getConfirmedRequestsCount(eventId);
-    }
-
     @GetMapping("/event/{eventId}")
     @Override
     public List<ParticipationRequestDto> getRequestsByEventId(@PathVariable Long eventId) {

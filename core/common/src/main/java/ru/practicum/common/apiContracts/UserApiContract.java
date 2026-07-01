@@ -16,13 +16,4 @@ public interface UserApiContract {
     @GetMapping("/api/users/{userId}/short")
     UserShortDto getUserShortById(@PathVariable long userId);
 
-    //    Boolean isUserExist(@PathVariable long userId);
-//    @GetMapping("/api/users/{userId}/exist")
-//
-//
-//    @GetMapping("/api/users/{userId}")
-
-//    UserDto getUserById(@PathVariable long userId);
-
-
 }

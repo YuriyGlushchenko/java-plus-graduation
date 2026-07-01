@@ -1,33 +1,41 @@
-server:
-  port: ${PORT:0}
-
 spring:
+  config:
+    import: "optional:configserver:"
+
+  cloud:
+    config:
+      enabled: false
+
   datasource:
-    url: jdbc:postgresql://localhost:5435/events
-    username: postgres
-    password: postgres
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:h2:mem:events-service;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
 
   jpa:
     hibernate:
       ddl-auto: none
     show-sql: false
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    database-platform: org.hibernate.dialect.H2Dialect
     properties:
       hibernate:
         format_sql: true
 
-  sql:
-    init:
-      mode: always
-      continue-on-error: false
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
 
-  cloud:
-    openfeign:
-      okhttp:
-        enabled: true
-      circuitbreaker:
-        enabled: true
+  instance:
+    hostname: localhost
+    non-secure-port: 0
+
 
 stats-service: # имя под которым сервис статистики зарегистрирован в eureca
   id: stats-server
