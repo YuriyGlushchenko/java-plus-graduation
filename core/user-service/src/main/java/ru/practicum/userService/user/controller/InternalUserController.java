@@ -21,28 +21,6 @@ public class InternalUserController implements ru.practicum.common.apiContracts.
     private final UserService userService;
 
     @Override
-    @GetMapping("/{userId}")
-    public UserDto getUserById(@PathVariable long userId) {
-        log.debug("Request to get user: id={}", userId);
-
-        UserDto user = userService.findUser(userId);
-
-        log.debug("Found user: id={}, name={}", user.getId(), user.getName());
-        return user;
-    }
-
-    @Override
-    @GetMapping("/{userId}/exist")
-    public Boolean isUserExist(@PathVariable long userId) {
-        log.debug("Request  user exist: id={}", userId);
-
-        Boolean isExist = userService.isUserExist(userId);
-
-        log.debug("User confirmed: id={}, exist={}", userId, isExist);
-        return isExist;
-    }
-
-    @Override
     @GetMapping("/{userId}/short")
     public UserShortDto getUserShortById(@PathVariable long userId) {
         log.debug("Request to get user short info: id={}", userId);
@@ -54,7 +32,7 @@ public class InternalUserController implements ru.practicum.common.apiContracts.
     }
 
     @PostMapping("/batch")
-    public Map<Long, UserShortDto> getUsersShortByIds(@RequestBody List<Long> userIds) {
+    public Map<Long, UserShortDto> getUsersDataByIds(@RequestBody List<Long> userIds) {
         log.debug("Internal request: get users short by ids: {}", userIds);
         return userService.getUsersShortByIds(userIds);
     }
