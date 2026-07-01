@@ -262,7 +262,7 @@ public class CommentServiceImpl implements CommentService {
         }
 
         try {
-            Map<Long, UserShortDto> userMap = userClient.getUsersShortByIds(new ArrayList<>(userIds));
+            Map<Long, UserShortDto> userMap = userClient.getUsersDataByIds(new ArrayList<>(userIds));
             if (userMap == null) {
                 log.warn("User service returned null for userIds: {}", userIds);
                 return Map.of();

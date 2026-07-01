@@ -318,7 +318,7 @@ public class EventServiceImpl implements EventService {
      * Возвращает информацию в виде Map<userID, UserShortDto> обо всех пользователях, указанных в событиях из списка
        в качестве инициаторов или модераторов
      */
-    private Map<Long, UserShortDto> getUsersDataMap(List<? extends Requestable> events) {
+    private Map<Long, UserShortDto> getUsersDataMap(List<? extends Enrichable> events) {
         if (events.isEmpty()) {
             return Map.of();
         }
@@ -328,7 +328,7 @@ public class EventServiceImpl implements EventService {
                 .collect(Collectors.toSet());
 
         try {
-            Map<Long, UserShortDto> userMap = userClient.getUsersShortByIds(new ArrayList<>(userIds));
+            Map<Long, UserShortDto> userMap = userClient.getUsersDataByIds(new ArrayList<>(userIds));
             if (userMap == null) {
                 log.warn("User service returned null for userIds: {}", userIds);
                 return Map.of();
@@ -456,6 +456,7 @@ public class EventServiceImpl implements EventService {
         enrichEventsWithConfirmedRequests(events);
         enrichEventsWithViews(events);
         enrichEventsListWithCommentsCount(events);
+        enrichEventsWithUsers(events);
     }
 
     private void enrichEvent(EventFullDto event) {
@@ -485,10 +486,6 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-    private void enrichEventWithConfirmedRequests(EventFullDto event) {
-        enrichEventsWithConfirmedRequests(List.of(event));
-    }
-
     /**
      * Дополняет каждое событие из списка  количеством просмотров.
      */
@@ -514,10 +511,6 @@ public class EventServiceImpl implements EventService {
         );
     }
 
-    private void enrichEventWithViews(EventFullDto event) {
-        enrichEventsWithViews(List.of(event));
-    }
-
     /**
      * Дополняет каждое событие из списка  количеством комментариев.
      */
@@ -537,6 +530,37 @@ public class EventServiceImpl implements EventService {
             log.error("Failed to get comments counts for eventIds={}, status={}", ids, e.status());
             eventDtos.forEach(item -> item.setCommentsCount(0L));
         }
+    }
+
+    /**
+     * Дополняет каждое событие из списка данными пользователей (инициаторов).
+     */
+    private void enrichEventsWithUsers(List<? extends Enrichable> events) {
+        if (events.isEmpty()) {
+            return;
+        }
+
+        Map<Long, UserShortDto> userMap = getUsersDataMap(events);
+        if (userMap.isEmpty()) {
+            return;
+        }
+
+        events.forEach(event -> {
+            UserShortDto currentInitiator = event.getInitiator();
+
+            if (currentInitiator == null || currentInitiator.getId() == null) {
+                log.debug("Event {} has no initiator", event.getId());
+                return;
+            }
+
+            UserShortDto enrichedUser = userMap.get(currentInitiator.getId());
+            if (enrichedUser != null) {
+                event.setInitiator(enrichedUser);
+            } else {
+                log.warn("User not found while enriching event for userId: {}", currentInitiator);
+                currentInitiator.setName("Unknown");
+            }
+        });
     }
 
     /**
@@ -621,4 +645,5 @@ public class EventServiceImpl implements EventService {
                 .build();
         statsClient.hit(hitDto);
     }
+
 }
