@@ -37,6 +37,26 @@
 подключиться и создать вторую базу
 - docker exec -it postgres-ewm psql -U postgres -c "CREATE DATABASE ewm;"
 
+#### Запуск docker-compose:
+Проблема: не проходит healthcheck. 
+1. Остановить и удалить текущие контейнеры
+- docker compose down
+
+2. Удалить старые образы проекта (чтобы Docker точно не взял старый jar)
+- docker compose down --rmi all
+
+3. Очистить Maven сборки всех модулей
+- mvn clean
+
+4. Собрать все модули заново
+- package -DskipTests
+
+Пересобрать все Docker-образы без кеша
+- docker compose build --no-cache
+
+6. Запустить все сервисы
+- docker compose up
+
 ## Commets
 ### Доп. фича:
 - коментарии к событиям
