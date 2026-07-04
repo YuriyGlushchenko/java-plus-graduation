@@ -20,6 +20,7 @@
         <module>stats-service</module>
         <module>infra</module>
         <module>core</module>
+        <module>recommendations</module>
     </modules>
 
     <properties>
@@ -34,6 +35,13 @@
         <postgresql.version>42.7.4</postgresql.version>
         <h2.version>2.2.224</h2.version>
         <querydsl.version>5.1.0</querydsl.version>
+        <protobuf.version>3.23.4</protobuf.version>
+        <grpc.version>1.63.0</grpc.version>
+        <avro.version>1.11.3</avro.version>
+
+
+        <avro-maven-plugin.version>${avro.version}</avro-maven-plugin.version>
+        <protobuf-plugin.version>2.4.0</protobuf-plugin.version>
     </properties>
 
 	<dependencyManagement>
@@ -72,6 +80,42 @@
                 <artifactId>querydsl-jpa</artifactId>
                 <version>${querydsl.version}</version>
                 <classifier>jakarta</classifier>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.avro</groupId>
+                <artifactId>avro</artifactId>
+                <version>${avro.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-clients</artifactId>
+                <version>${kafka-clients.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.devh</groupId>
+                <artifactId>grpc-spring-boot-starter</artifactId>
+                <version>${grpc-spring-boot-starter.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.devh</groupId>
+                <artifactId>grpc-server-spring-boot-starter</artifactId>
+                <version>${grpc-spring-boot-starter.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-stub</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-protobuf</artifactId>
+                <version>${grpc.version}</version>
             </dependency>
 
         </dependencies>

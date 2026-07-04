@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package stats.service.collector;  // имя пакета в мире gRPC/Protobuf - используется только в работе с gRPC, может не совпадать с пакетами java и с папками
+
+option java_multiple_files = true; // генерирует каждый класс в отдельном файле (иначе все классы будут внутри одного родительского класса)
+//option java_package = "ru.yandex.practicum.grpc.telemetry.event"; // можно указать, в какой пакет будут складываться сгенерированные классы.
+
+message UserActionProto {
+  int64  user_id = 1; // идентификатор пользователя, совершившего действие;
+  int64  event_id = 2; // идентификатор мероприятия, с которым связано действие;
+  ActionTypeProto action_type = 3; // тип действия;
+  google.protobuf.Timestamp timestamp = 4; // время действия
+}
+
+// тип действия
+enum ActionTypeProto {
+  ACTION_VIEW = 0;      // просмотр страницы мероприятия;
+  ACTION_REGISTER = 1; //  заявка на участие в мероприятии;
+  ACTION_LIKE = 2;       // положительная оценка/лайк мероприятию.
+}
+
