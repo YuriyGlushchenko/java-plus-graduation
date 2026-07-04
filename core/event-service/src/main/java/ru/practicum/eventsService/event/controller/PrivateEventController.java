@@ -1,0 +1,90 @@
+package ru.practicum.eventsService.event.controller;
+
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+import ru.practicum.common.aop.annotation.Loggable;
+import ru.practicum.common.dto.events.EventFullDto;
+import ru.practicum.common.dto.events.EventShortDto;
+import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateRequest;
+import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateResult;
+import ru.practicum.common.dto.participationRequest.ParticipationRequestDto;
+import ru.practicum.eventsService.event.dto.NewEventDto;
+import ru.practicum.eventsService.event.dto.UpdateEventUserRequest;
+import ru.practicum.eventsService.event.service.EventService;
+
+import java.util.List;
+
+@Slf4j
+@RestController
+@RequestMapping("/users/{userId}/events")
+@Validated
+@RequiredArgsConstructor
+public class PrivateEventController {
+    private final EventService eventService;
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    @Loggable
+    public EventFullDto addEvent(@PathVariable long userId,
+                                 @RequestBody @Valid NewEventDto newEventDto) {
+        log.debug("Request to add new event:  userId={}", userId);
+
+        return eventService.createEvent(userId, newEventDto);
+    }
+
+    @GetMapping
+    @Loggable
+    public List<EventShortDto> getUserEvents(@PathVariable long userId,
+                                             @RequestParam(defaultValue = "0") @Min(0) int from,
+                                             @RequestParam(defaultValue = "10") @Positive int size) {
+        log.debug("Request to get user events:  userId={}", userId);
+
+        return eventService.getUserEvents(userId, from, size);
+    }
+
+    @GetMapping("/{eventId}")
+    @Loggable
+    public EventFullDto getUserEvent(@PathVariable long userId,
+                                     @PathVariable long eventId) {
+        log.debug("Request to get user event:  userId={}, eventId={}", userId, eventId);
+
+        return eventService.findUserEventByEventId(userId, eventId);
+    }
+
+    @PatchMapping("/{eventId}")
+    @Loggable
+    public EventFullDto updateUserEvent(@PathVariable long userId,
+                                        @PathVariable long eventId,
+                                        @RequestBody @Valid UpdateEventUserRequest body) {
+        log.debug("Request to update user event:  userId={}, eventId={}", userId, eventId);
+
+        return eventService.updateUserEvent(userId, eventId, body);
+    }
+
+    @GetMapping("/{eventId}/requests")
+    @Loggable
+    public List<ParticipationRequestDto> getParticipationRequests(@PathVariable long userId,
+                                                                  @PathVariable long eventId) {
+        log.debug("Request to get Participation Requests for user event:  userId={}, eventId={}", userId, eventId);
+
+        return eventService.getParticipationRequests(userId, eventId);
+    }
+
+    @PatchMapping("/{eventId}/requests")
+    @Loggable
+    public EventRequestStatusUpdateResult updateRequestStatuses(@PathVariable long userId,
+                                                                @PathVariable long eventId,
+                                                                @RequestBody EventRequestStatusUpdateRequest request) {
+        log.debug("Request to update Participation Requests statuses:  userId={}, eventId={}", userId, eventId);
+
+        return eventService.updateRequestStatuses(userId, eventId, request);
+    }
+
+}

@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: event-service
+  config:
+    import: "configserver:"
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        serviceId: config-server
+      fail-fast: true # приложение сразу упадет, если сервер конфигураций оказался недоступен
+      retry:
+        useRandomPolicy: true  # для повторных попыток будет использована стратегия random exponential backoff
+        max-interval: 2000 # максимально возможный интервал между попытками подключения.
+        max-attempts: 10  # Сколько раз пытаться
+        initial-interval: 1000  # начальная задержка между попытками
+        multiplier: 1.5  # множитель увеличения задержки
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    preferIpAddress: true
+    instance-id: "${spring.application.name}:${random.value}"  # уникальный ID экземпляра
+    hostname: localhost

@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Core-DEV" type="CompoundRunConfigurationType">
+    <toRun name="Comments-DEV" type="Application" />
+    <toRun name="Events-DEV" type="Application" />
+    <toRun name="Gateway" type="Application" />
+    <toRun name="Requests-DEV" type="Application" />
+    <toRun name="StatsServer-DEV" type="Application" />
+    <toRun name="Users-DEV" type="Application" />
+    <method v="2" />
+  </configuration>
+</component>

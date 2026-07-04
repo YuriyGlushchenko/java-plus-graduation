@@ -16,77 +16,123 @@ spring:
               - NOT_FOUND
               - SERVICE_UNAVAILABLE
               - GATEWAY_TIMEOUT
+        - name: CircuitBreaker
+          args:
+            name: gatewayCircuitBreaker
+            fallbackUri: forward:/fallback
         - name: DedupeResponseHeader
           args:
             name: Access-Control-Allow-Credentials Access-Control-Allow-Origin
+
       httpclient:
         connect-timeout: 1000
         response-timeout: 10s
+
       routes:
-        - id: ewm-admin
-          uri: lb://main-service
+        - id: comment-admin-service
+          uri: lb://comment-service
           predicates:
-            - Path=/admin/**
+            - Path=/admin/comments/**
           filters:
             - StripPrefix=0
-            - name: CircuitBreaker
-              args:
-                name: ewmAdminService
-                fallbackUri: forward:/fallback
 
-        - id: ewm-users
-          uri: lb://main-service
+        - id: comment-user-service
+          uri: lb://comment-service
           predicates:
-            - Path=/users/**
+            - Path=/users/{userId}/comments/**
           filters:
             - StripPrefix=0
-            - name: CircuitBreaker
-              args:
-                name: ewmUsersService
-                fallbackUri: forward:/fallback
 
-        - id: ewm-events
-          uri: lb://main-service
+        - id: comment-event-service
+          uri: lb://comment-service
+          predicates:
+            - Path=/events/{eventId}/comments  # тонкое место, может пересекаться с - Path=/events/** в events-service
+          filters:
+            - StripPrefix=0
+
+        - id: comment-service
+          uri: lb://comment-service
+          predicates:
+            - Path=/comments/{commentId}
+          filters:
+            - StripPrefix=0
+
+        - id: events-admin-service
+          uri: lb://event-service
+          predicates:
+            - Path=/admin/events/**
+          filters:
+            - StripPrefix=0
+
+        - id: events-user-service
+          uri: lb://event-service
+          predicates:
+            - Path=/users/{userId}/events/**
+          filters:
+            - StripPrefix=0
+
+        - id: event-service
+          uri: lb://event-service
           predicates:
             - Path=/events/**
           filters:
             - StripPrefix=0
-            - name: CircuitBreaker
-              args:
-                name: ewmEventsService
-                fallbackUri: forward:/fallback
 
-        - id: ewm-categories
-          uri: lb://main-service
+        - id: categories-admin-service
+          uri: lb://event-service
+          predicates:
+            - Path=/admin/categories/**
+          filters:
+            - StripPrefix=0
+
+        - id: categories-service
+          uri: lb://event-service
           predicates:
             - Path=/categories/**
           filters:
             - StripPrefix=0
-            - name: CircuitBreaker
-              args:
-                name: ewmCategoriesService
-                fallbackUri: forward:/fallback
 
-        - id: ewm-compilations
-          uri: lb://main-service
+        - id: compilations-admin-service
+          uri: lb://event-service
+          predicates:
+            - Path=/admin/compilations/**
+          filters:
+            - StripPrefix=0
+
+        - id: compilations-service
+          uri: lb://event-service
           predicates:
             - Path=/compilations/**
           filters:
             - StripPrefix=0
-            - name: CircuitBreaker
-              args:
-                name: ewmCompilationsService
-                fallbackUri: forward:/fallback
-        - id: ewm-comments
-          uri: lb://main-service
+
+        - id: user-service
+          uri: lb://user-service
           predicates:
-            - Path=/comments/**
+            - Path=/admin/users/**
           filters:
             - StripPrefix=0
-            - name: CircuitBreaker
-              args:
-                name: ewmСommentsService
-                fallbackUri: forward:/fallback
+
+        - id: requests-service
+          uri: lb://request-service
+          predicates:
+            - Path=/users/{userId}/requests/**
+          filters:
+            - StripPrefix=0
+
+
+resilience4j.circuitbreaker:
+  configs:
+    default:
+      slidingWindowSize: 50
+      failureRateThreshold: 50
+      waitDurationInOpenState: 5000
+      permittedNumberOfCallsInHalfOpenState: 3
+      minimumNumberOfCalls: 5
+      automaticTransitionFromOpenToHalfOpenEnabled: true
+  instances:
+    gatewayCircuitBreaker:
+      baseConfig: default
 
 logging:
   level:

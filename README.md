@@ -1,11 +1,121 @@
-## Docker DB containers
-#### Создать контейнер с первой базой (например, stats)
-docker run --name postgres-ewm -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=stats -p 5432:5432 -d postgres:16.1
-####  Подключиться и создать вторую базу
-docker exec -it postgres-ewm psql -U postgres -c "CREATE DATABASE ewm;"
+## 1. Микросервисы
+### 1.1 Структура:
+Монолитное приложение разбито на 4 микросервиса:
+- event-service (включает в себя categories и compilations).
+- user-service
+- comment-service
+- request-service
 
-## Commets
-### Доп. фича:
+Так же создан отдельный модуль **commone**, включающий в себя все общие DTO, используемые для межсервисного взаимодействия .Туда же вынесено всё что используется сразу во всех микросервисах:
+- commone
+  - apiContracts - общие интерфейсы для межсервисного взаимодействия
+  - exceptions - ошибки и обработчик ошибок
+  - aop - используемые во всех сервисах аннотации для логирования
+  - dto - сами DTO.
+### 1.2 Зависимости микросервисов друг от друга:
+- events-service зависит от:
+  - user-service
+  - request-service
+  - comment-service
+- user-service зависит от:
+  - ни от кого не зависит)
+- comment-service зависит от:
+  - event-service
+  - user-service
+- request-service зависит от:
+  - user-service
+  - event-service
+### 1.3 Конфигурации микросервисов
+Непосредственно в самих микросервисах хранятся только базовые настройки для подключения к discovery-server (Eureca).
+Все остальные настройки, как для основного профиля, так и для DEV-профиля микросервис получает от config-server, адрес которого находит через discovery-service (Eureca).
+
+На самом config-server все настройки приложений хранятся в classpath (локально).
+
+## 2. Внутренний API микросервисов
+
+### 2.1. User Service
+**Базовый путь:** `/api/users`
+
+| Метод | URL | Описание |
+|-------|-----|----------|
+| `GET` | `/{userId}/short` | Получить краткую информацию о пользователе (id + name) |
+| `POST` | `/batch` | Получить данные нескольких пользователей по списку ID |
+
+---
+
+### 2.2. Events Service
+**Базовый путь:** `/api/events`
+
+| Метод | URL | Описание |
+|-------|-----|----------|
+| `GET` | `/{id}` | Получить базовую информацию о событии (для внутреннего использования) |
+
+---
+
+### 2.3. Requests Service
+**Базовый путь:** `/api/requests`
+
+| Метод | URL | Описание |
+|-------|-----|----------|
+| `GET` | `/event/{eventId}` | Получить список заявок на участие в событии |
+| `PATCH` | `/event/{eventId}` | Изменить статусы заявок (подтвердить/отклонить) |
+| `POST` | `/events/count` | Получить количество подтверждённых заявок для списка событий |
+
+---
+
+### 2.4. Comments Service
+**Базовый путь:** `/api/comments`
+
+| Метод | URL | Описание |
+|-------|-----|----------|
+| `GET` | `/counts` | Получить количество комментариев для списка событий по статусу |
+
+---
+
+### Fallback
+Настроены fallback фабрики для каждого клиента. При недоступности сервисов, остальные продолжают работать, с усеченными данными (заглушками).
+Добавлены тесты для проверки работы fallback.
+
+### Формат передачи данных
+
+Все внутренние запросы используют **JSON** формат.
+
+## 3. Внешний API
+https://raw.githubusercontent.com/yandex-praktikum/java-explore-with-me/main/ewm-main-service-spec.json
+
+
+## 4. Docker
+В docker-compose описаны сервисы для запуска баз данных для каждого приложения, а так же для запуска всех микросервисов.
+
+#### Либо, пример команд,  для создания docker-контейнера вручную:
+создать контейнер с  первой базой (например, stats)
+- docker run --name postgres-ewm -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=stats -p 5432:5432 -d postgres:16.1
+
+подключиться и создать вторую базу
+- docker exec -it postgres-ewm psql -U postgres -c "CREATE DATABASE ewm;"
+
+#### Запуск docker-compose:
+Проблема: не проходит healthcheck. 
+1. Остановить и удалить текущие контейнеры
+- docker compose down
+
+2. Удалить старые образы проекта (чтобы Docker точно не взял старый jar)
+- docker compose down --rmi all
+
+3. Очистить Maven сборки всех модулей
+- mvn clean
+
+4. Собрать все модули заново
+- package -DskipTests
+
+Пересобрать все Docker-образы без кеша
+- docker compose build --no-cache
+
+6. Запустить все сервисы
+- docker compose up
+
+## 5. Доп. фича
+### Comments:
 - коментарии к событиям
 - модерация коментариев со стороны админов
 - сохранение информации о том, кто был модератором
