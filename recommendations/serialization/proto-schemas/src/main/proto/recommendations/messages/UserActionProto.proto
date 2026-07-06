@@ -5,7 +5,7 @@ import "google/protobuf/timestamp.proto";
 package stats.service.collector;  // имя пакета в мире gRPC/Protobuf - используется только в работе с gRPC, может не совпадать с пакетами java и с папками
 
 option java_multiple_files = true; // генерирует каждый класс в отдельном файле (иначе все классы будут внутри одного родительского класса)
-//option java_package = "ru.yandex.practicum.grpc.telemetry.event"; // можно указать, в какой пакет будут складываться сгенерированные классы.
+option java_package = "ru.practicum.recommendations.proto"; // можно указать, в какой пакет будут складываться сгенерированные классы.
 
 message UserActionProto {
   int64  user_id = 1; // идентификатор пользователя, совершившего действие;

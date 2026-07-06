@@ -30,3 +30,15 @@ services:
                              --partitions 1 --replication-factor 1 --if-not-exists \
                              --bootstrap-server kafka:29092'"
     init: true
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest  # проверить кафка через ui http://localhost:8090
+    container_name: kafka-ui
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_JMX_PORT: 9101
+    depends_on:
+      - kafka
