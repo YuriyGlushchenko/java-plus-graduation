@@ -111,7 +111,7 @@ public class AggregationStarter {
             return;
         }
 
-        similarityService.initSimilarityCalculation(userActionAvro);
+        similarityService.processUserAction(userActionAvro);
 //        Optional<SensorsSnapshotAvro> snapshotOpt = updateState(sensorEvent);
 //
 //        snapshotOpt.ifPresent(this::sendSnapshotToBroker);
