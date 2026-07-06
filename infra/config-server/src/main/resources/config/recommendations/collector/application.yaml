@@ -9,7 +9,7 @@ kafka:
     properties:
       bootstrap.servers: ${kafka.bootstrap-server}
       key.serializer: org.apache.kafka.common.serialization.StringSerializer
-      value.serializer: ru.practicum.collector.kafka.UserActionAvroSerializer
+      value.serializer: ru.practicum.serialization.AvroSerializer # универсальный серриализатор для Avro из модуля serialization
       linger.ms: 0 # время (в миллисекундах), которое продюсер ждет, прежде чем отправить накопленные сообщения.
 
 grpc:
