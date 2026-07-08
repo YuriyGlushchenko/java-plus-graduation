@@ -1,6 +1,5 @@
-package ru.practicum.aggregator;
+package ru.practicum.analyzer.processor;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -10,24 +9,29 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
-import org.springframework.stereotype.Component;
-import ru.practicum.aggregator.config.KafkaProps;
-import ru.practicum.aggregator.service.SimilarityService;
-import ru.practicum.ewm.stats.avro.UserActionAvro;
+import ru.practicum.analyzer.config.KafkaProps;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-@Component
-@RequiredArgsConstructor
-public class AggregationStarter {
+public abstract class BaseProcessor<T extends SpecificRecordBase> {
 
     private static final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new ConcurrentHashMap<>();
     private final KafkaProps kafkaProps;
     private final Producer<String, SpecificRecordBase> producer;
-    private final KafkaConsumer<String, SpecificRecordBase> consumer;
-    private final SimilarityService similarityService;
+    private final KafkaConsumer<String, T> consumer;
+
+    public BaseProcessor(
+            KafkaProps kafkaProps,
+            Producer<String, SpecificRecordBase> producer,
+            KafkaConsumer<String, T> consumer) {
+        this.kafkaProps = kafkaProps;
+        this.producer = producer;
+        this.consumer = consumer;
+    }
+
+    protected abstract void handleRecord(ConsumerRecord<String, T> record);
 
     public void start() {
 
@@ -37,10 +41,10 @@ public class AggregationStarter {
         try {
 
             while (true) {
-                ConsumerRecords<String, SpecificRecordBase> records = consumer.poll(kafkaProps.getConsumer().getPollTimeout());
+                ConsumerRecords<String, T> records = consumer.poll(kafkaProps.getConsumer().getPollTimeout());
 
                 int count = 0;
-                for (ConsumerRecord<String, SpecificRecordBase> record : records) {
+                for (ConsumerRecord<String, T> record : records) {
                     handleRecord(record);
                     manageOffsets(record, count);
                     count++;
@@ -60,7 +64,6 @@ public class AggregationStarter {
         } catch (Exception e) {
             log.error("Ошибка во время обработки чтения сообщений из брокера", e);
         } finally {
-
             try {
                 producer.flush(); // сбрасываем данные в буфере
 
@@ -78,7 +81,7 @@ public class AggregationStarter {
         }
     }
 
-    private void manageOffsets(ConsumerRecord<String, SpecificRecordBase> record, int count) {
+    private void manageOffsets(ConsumerRecord<String, T> record, int count) {
         currentOffsets.put(
                 new TopicPartition(record.topic(), record.partition()),
                 new OffsetAndMetadata(record.offset() + 1)
@@ -93,24 +96,4 @@ public class AggregationStarter {
             });
         }
     }
-
-    private void handleRecord(ConsumerRecord<String, SpecificRecordBase> record) {
-        log.debug("топик = {}, партиция = {}, смещение = {}, значение: {}\n",
-                record.topic(), record.partition(), record.offset(), record.value());
-
-        SpecificRecordBase value = record.value();
-
-        if (value == null) {
-            log.warn("Получено пустое сообщение");
-            return;
-        }
-
-        if (!(value instanceof UserActionAvro userActionAvro)) {
-            log.warn("Сообщение не относится к событиям активности пользователя: {}", value.getClass().getName());
-            return;
-        }
-
-        similarityService.processUserAction(userActionAvro);
-    }
-
 }

@@ -1,4 +1,4 @@
-package ru.practicum.aggregator;
+package ru.practicum.analyzer.processor;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,8 +11,7 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.springframework.stereotype.Component;
-import ru.practicum.aggregator.config.KafkaProps;
-import ru.practicum.aggregator.service.SimilarityService;
+import ru.practicum.analyzer.config.KafkaProps;
 import ru.practicum.ewm.stats.avro.UserActionAvro;
 
 import java.util.Map;
@@ -21,13 +20,14 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class AggregationStarter {
+public class UserActionProcessor {
 
     private static final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new ConcurrentHashMap<>();
     private final KafkaProps kafkaProps;
     private final Producer<String, SpecificRecordBase> producer;
     private final KafkaConsumer<String, SpecificRecordBase> consumer;
-    private final SimilarityService similarityService;
+//    private final SimilarityService similarityService;
+//    private final Map<String, SensorsSnapshotAvro> snapShots = new HashMap<>();
 
     public void start() {
 
@@ -110,7 +110,7 @@ public class AggregationStarter {
             return;
         }
 
-        similarityService.processUserAction(userActionAvro);
+//        similarityService.processUserAction(userActionAvro);
     }
 
 }
