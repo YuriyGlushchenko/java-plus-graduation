@@ -34,81 +34,85 @@ public class SimilarityServiceImpl implements SimilarityService {
         double actionWeight = ActionWeight.getWeight(userActionAvro.getActionType());
         double oldWeight = getUserWeight(eventId, userId);
 
-        // Если новый вес не больше сохраненного - ничего не делаем
         if (actionWeight <= oldWeight) {
-            log.debug("Weight not changed for event={}, user={}, weight={}", eventId, userId, oldWeight);
+            log.debug("Weight not changed, no action for event={}, user={}, weight={}", eventId, userId, oldWeight);
             return;
         }
 
-        double delta = actionWeight - oldWeight;
-        log.debug("Updating weight: event={}, user={}, old={}, new={}, delta={}",
-                eventId, userId, oldWeight, actionWeight, delta);
+        log.debug("Updating weight: event={}, user={}, old={}, new={}", eventId, userId, oldWeight, actionWeight);
 
-        // 1. Обновляем вес пользователя
-        userEventWeights.computeIfAbsent(eventId, e -> new HashMap<>())
-                .put(userId, actionWeight);
+        // 1. Обновляем данные пользователя
+        double newTotalA = updateUserWeight(eventId, userId, actionWeight, oldWeight);
 
-        // 2. Обновляем общую сумму весов мероприятия
-        double oldTotalA = eventTotalWeights.getOrDefault(eventId, 0.0);
-        double newTotalA = oldTotalA + delta;
-        eventTotalWeights.put(eventId, newTotalA);
-
-        // 3. Получаем список событий (кроме текущего) с которыми взаимодействовал пользователь,
+        // 2. Получаем список событий (кроме текущего) с которыми взаимодействовал пользователь,
         // а значит вносил свой вес и вляил на сходство, которое теперь надо пересчитать:
-        List<Long> eventsToUpdate = userEventWeights.entrySet().stream()
+        List<Long> eventsToUpdate = getEventsToUpdate(eventId, userId);
+
+        // 3. Пересчитываем сходство для каждой пары
+        recalculateSimilarities(eventId, userId, actionWeight, oldWeight, newTotalA,
+                eventsToUpdate, userActionAvro.getTimestamp());
+    }
+
+    private double updateUserWeight(long eventId, long userId, double newWeight, double oldWeight) {
+        double delta = newWeight - oldWeight;
+
+        // Обновляем матрицу
+        userEventWeights.computeIfAbsent(eventId, e -> new HashMap<>())
+                .put(userId, newWeight);
+
+        // Обновляем общую сумму весов события
+        double oldTotal = eventTotalWeights.getOrDefault(eventId, 0.0);
+        double newTotal = oldTotal + delta;
+        eventTotalWeights.put(eventId, newTotal);
+
+        return newTotal;
+    }
+
+    private List<Long> getEventsToUpdate(long currentEventId, long userId) {
+        return userEventWeights.entrySet().stream()
                 .filter(entry -> {
-                    Long event = entry.getKey();
+                    Long eventId = entry.getKey();
                     Map<Long, Double> userWeights = entry.getValue();
-                    return event != eventId
+                    return eventId != currentEventId
                             && userWeights != null
                             && userWeights.containsKey(userId)
                             && userWeights.get(userId) > 0;
                 })
                 .map(Map.Entry::getKey)
                 .toList();
+    }
 
-        log.debug("Events to update for user {}: {}", userId, eventsToUpdate);
+    private void recalculateSimilarities(long eventA, long userId, double newWeightA,
+                                         double oldWeightA, double newTotalA,
+                                         List<Long> eventsToUpdate, Instant timestamp) {
+        for (Long eventB : eventsToUpdate) {
+            double weightB = getUserWeight(eventB, userId);
+            double result = calculatePairSimilarity(eventA, eventB, newWeightA, oldWeightA, weightB, newTotalA);
 
-        // 4. Обрабатываем каждую пару
-        for (Long pairEventId : eventsToUpdate) {
-            processEventPair(eventId, userId, actionWeight, oldWeight, pairEventId, newTotalA, userActionAvro.getTimestamp());
+            sendSimilarity(eventA, eventB, result, timestamp);
+            log.debug("Updated similarity: A={}, B={}, similarity={}", eventA, eventB, result);
         }
     }
 
-    private void processEventPair(long actionEvent, long userId,
-                                  double actionWeight, double oldActionWeight,
-                                  long pairEvent, double newTotalA, Instant timestamp) {
+    private double calculatePairSimilarity(long eventA, long eventB,
+                                           double newWeightA, double oldWeightA,
+                                           double weightB, double totalA) {
+        // 1. Вычисляем изменение S_min
+        double oldMin = min(oldWeightA, weightB);
+        double newMin = min(newWeightA, weightB);
+        double deltaMin = newMin - oldMin;
 
-        // Получаем вес пользователя для парного мероприятия.
-        // Проверки на null не делаем, т.к. сюда попадают только pairEvent из уже отфильтрованного списка событий, в которых есть вес пользователя с userId
-        double pairEventWeight = userEventWeights.get(pairEvent).get(userId);
-
-        // Вычисляем изменение в S_min
-        double oldMinPairWeight = Math.min(oldActionWeight, pairEventWeight);
-        double newMinPairWeight = Math.min(actionWeight, pairEventWeight);
-        double deltaMin = newMinPairWeight - oldMinPairWeight;
-
-        double sMin = getMinSum(actionEvent, pairEvent);
-        if (deltaMin > 0) {  // Обновляем S_min только если есть изменение
-            sMin += deltaMin;
-            putMinSum(actionEvent, pairEvent, sMin);
-            log.debug("Updated S_min: pair({},{}), new sMin={}, delta={}", actionEvent, pairEvent, sMin, deltaMin);
+        // 2. Обновляем S_min если нужно
+        double oldSMin = getMinSum(eventA, eventB);
+        double newSMin = oldSMin;
+        if (deltaMin > 0) {
+            newSMin = oldSMin + deltaMin;
+            putMinSum(eventA, eventB, newSMin);
         }
 
-        // Получаем общую сумму весов для парного мероприятия
-        double totalB = eventTotalWeights.getOrDefault(pairEvent, 0.0);
-
-        // Вычисляем косинусное сходство
-        double similarity = 0.0;
-        if (newTotalA > 0 && totalB > 0) {
-            similarity = sMin / (Math.sqrt(newTotalA) * Math.sqrt(totalB));
-            log.debug("Similarity calculated: A={}, B={}, sMin={}, totalA={}, totalB={}, similarity={}",
-                    actionEvent, pairEvent, sMin, newTotalA, totalB, similarity);
-        } else {
-            log.debug("Cannot calculate similarity: totalA={}, totalB={}", newTotalA, totalB);
-        }
-
-        sendSimilarity(actionEvent, pairEvent, similarity, timestamp);
+        // 3. Вычисляем сходство
+        double totalB = eventTotalWeights.getOrDefault(eventB, 0.0);
+        return newSMin / (Math.sqrt(totalA) * Math.sqrt(totalB));
     }
 
     private double getUserWeight(long eventId, long userId) {
@@ -139,8 +143,8 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     private void sendSimilarity(long eventA, long eventB, double similarity, Instant timestamp) {
-        long first = Math.min(eventA, eventB);
-        long second = Math.max(eventA, eventB);
+        long first = min(eventA, eventB);
+        long second = max(eventA, eventB);
 
         EventSimilarityAvro eventSimilarityAvro = EventSimilarityAvro.newBuilder()
                 .setEventA(first)
@@ -150,12 +154,11 @@ public class SimilarityServiceImpl implements SimilarityService {
                 .build();
 
         producer.sendEventSimilarity(eventSimilarityAvro)
-                .thenAccept(metadata -> {
-                    log.info("Event similarity sent: eventA={}, eventB={}, score={}, offset={}",
-                            first, second, similarity, metadata.offset());
-                })
+                .thenAccept(metadata ->
+                        log.info("Event similarity sent: eventA={}, eventB={}, score={}, offset={}",
+                                first, second, similarity, metadata.offset()))
                 .exceptionally(exception -> {
-                    log.error("Failed to send Event similarity for pair ({}, {})", first, second, exception);
+                    log.error("Failed to send similarity for pair ({}, {})", first, second, exception);
                     return null;
                 });
     }
