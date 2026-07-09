@@ -1,10 +1,10 @@
-package ru.practicum.aggregator.model;
+package ru.practicum.analyzer.model;
 
 import lombok.Getter;
 import ru.practicum.ewm.stats.avro.ActionTypeAvro;
 
 @Getter
-public enum ActionWeight {
+public enum ActionType {
 
     VIEW(0.4),
     REGISTER(0.8),
@@ -12,7 +12,7 @@ public enum ActionWeight {
 
     private final double weight;
 
-    ActionWeight(double weight) {
+    ActionType(double weight) {
         this.weight = weight;
     }
 

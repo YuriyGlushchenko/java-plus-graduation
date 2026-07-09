@@ -6,7 +6,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import ru.practicum.analyzer.config.KafkaProps;
@@ -15,25 +14,26 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public abstract class BaseProcessor<T extends SpecificRecordBase> {
+public abstract class BaseProcessor<T extends SpecificRecordBase> implements Runnable {
 
     private static final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new ConcurrentHashMap<>();
     private final KafkaProps kafkaProps;
-    private final Producer<String, SpecificRecordBase> producer;
+    //    private final Producer<String, SpecificRecordBase> producer;
     private final KafkaConsumer<String, T> consumer;
 
     public BaseProcessor(
             KafkaProps kafkaProps,
-            Producer<String, SpecificRecordBase> producer,
+//            Producer<String, SpecificRecordBase> producer,
             KafkaConsumer<String, T> consumer) {
         this.kafkaProps = kafkaProps;
-        this.producer = producer;
+//        this.producer = producer;
         this.consumer = consumer;
     }
 
     protected abstract void handleRecord(ConsumerRecord<String, T> record);
 
-    public void start() {
+    @Override
+    public void run() {
 
         // регистрируем хук, который при штатном завершении работы вызовет wakeup, сгенерит WakeupException -> отработает finally
         Runtime.getRuntime().addShutdownHook(new Thread(consumer::wakeup));
@@ -65,7 +65,7 @@ public abstract class BaseProcessor<T extends SpecificRecordBase> {
             log.error("Ошибка во время обработки чтения сообщений из брокера", e);
         } finally {
             try {
-                producer.flush(); // сбрасываем данные в буфере
+//                producer.flush(); // сбрасываем данные в буфере
 
                 if (!currentOffsets.isEmpty()) {
                     consumer.commitSync(currentOffsets); // тут синхронно, чтобы убедиться, что все оффсеты зафиксированы.
@@ -75,8 +75,8 @@ public abstract class BaseProcessor<T extends SpecificRecordBase> {
             } finally {
                 log.info("Закрываем консьюмер");
                 consumer.close();
-                log.info("Закрываем продюсер");
-                producer.close();
+//                log.info("Закрываем продюсер");
+//                producer.close();
             }
         }
     }

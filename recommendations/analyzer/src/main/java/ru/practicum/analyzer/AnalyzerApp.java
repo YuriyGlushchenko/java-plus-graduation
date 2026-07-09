@@ -6,6 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ConfigurableApplicationContext;
 import ru.practicum.analyzer.config.KafkaProps;
+import ru.practicum.analyzer.processor.SimilarityProcessor;
+import ru.practicum.analyzer.processor.UserActionProcessor;
 
 @SpringBootApplication
 @EnableConfigurationProperties(KafkaProps.class)
@@ -14,17 +16,18 @@ public class AnalyzerApp {
         ConfigurableApplicationContext context =
                 SpringApplication.run(AnalyzerApp.class, args);
 
-//        final HubEventProcessor hubEventProcessor = context.getBean(HubEventProcessor.class);
-//        SnapshotProcessor snapshotProcessor = context.getBean(SnapshotProcessor.class);
-//
-//        // запускаем в отдельном потоке обработчик событий
-//        // от пользовательских хабов
-//        Thread hubEventsThread = new Thread(hubEventProcessor);
-//        hubEventsThread.setName("HubEventHandlerThread");
-//        hubEventsThread.start();
-//
-//        // В текущем потоке начинаем обработку
-//        // снимков состояния датчиков
-//        snapshotProcessor.start();
+        final SimilarityProcessor similarityProcessor = context.getBean(SimilarityProcessor.class);
+        UserActionProcessor userActionProcessor = context.getBean(UserActionProcessor.class);
+
+        // запускаем в отдельных потоках обработчики сообщений из топиков
+        Thread similarityThread = new Thread(similarityProcessor);
+        similarityThread.setName("SimilarityHandlerThread");
+        similarityThread.start();
+
+
+        Thread userActionThread = new Thread(userActionProcessor);
+        userActionThread.setName("UserActionHandlerThread");
+        userActionThread.start();
+
     }
 }

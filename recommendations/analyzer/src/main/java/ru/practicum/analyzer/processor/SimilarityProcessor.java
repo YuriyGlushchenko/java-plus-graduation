@@ -14,16 +14,15 @@ import jakarta.annotation.PostConstruct;
 
 @Slf4j
 @Component
-public class SimilarityProcessor extends BaseProcessor<EventSimilarityAvro> {
+public class SimilarityProcessor extends BaseProcessor<EventSimilarityAvro>  {
 
     private final SimilarityService similarityService;
 
     public SimilarityProcessor(
             KafkaProps kafkaProps,
-            Producer<String, SpecificRecordBase> producer,
             KafkaConsumer<String, EventSimilarityAvro> consumer,
             SimilarityService similarityService) {
-        super(kafkaProps, producer, consumer);
+        super(kafkaProps, consumer);
         this.similarityService = similarityService;
     }
 
@@ -39,6 +38,7 @@ public class SimilarityProcessor extends BaseProcessor<EventSimilarityAvro> {
         log.debug("Получено EventSimilarity: eventA={}, eventB={}, score={}",
                 value.getEventA(), value.getEventB(), value.getScore());
 
-        // TODO: Обработка сходства
+
+        similarityService.saveSimilarity(value);
     }
 }

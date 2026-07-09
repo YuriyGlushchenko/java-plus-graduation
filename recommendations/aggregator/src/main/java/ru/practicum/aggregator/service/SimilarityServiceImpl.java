@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.aggregator.kafka.EventSimilarityProducer;
-import ru.practicum.aggregator.model.ActionWeight;
+import ru.practicum.aggregator.model.ActionType;
 import ru.practicum.ewm.stats.avro.EventSimilarityAvro;
 import ru.practicum.ewm.stats.avro.UserActionAvro;
 
@@ -31,7 +31,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     public void processUserAction(UserActionAvro userActionAvro) {
         long eventId = userActionAvro.getEventId();
         long userId = userActionAvro.getUserId();
-        double actionWeight = ActionWeight.getWeight(userActionAvro.getActionType());
+        double actionWeight = ActionType.getWeight(userActionAvro.getActionType());
         double oldWeight = getUserWeight(eventId, userId);
 
         if (actionWeight <= oldWeight) {
