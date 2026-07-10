@@ -17,9 +17,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
-@Service
+//@Service
 @RequiredArgsConstructor
-public class RecommendationServiceImpl implements RecommendationService {
+public class RecommendationServiceImplTemppp implements RecommendationService {
 
     private final InteractionRepository interactionRepository;
     private final SimilarityRepository similarityRepository;
@@ -36,29 +36,30 @@ public class RecommendationServiceImpl implements RecommendationService {
         log.debug("Getting recommendations for user: {}", userId);
 
         // 1. Получаем последние взаимодействия пользователя
-        List<Interaction> lastUserInteractions = interactionRepository.findTopNByUserId(userId,
+        List<Interaction> userInteractions = interactionRepository.findTopNByUserId(userId,
                 PageRequest.of(0, N_MAX_RECENT_INTERACTIONS));
-        if (lastUserInteractions.isEmpty()) {
+        if (userInteractions.isEmpty()) {
             log.debug("No interactions found for user: {}, no recommendations", userId);
             return List.of();
         }
 
-        // Список ID мероприятий, с которыми пользователь уже взаимодействовал
-        List <Long> interactedEventsIds = lastUserInteractions.stream()
-                .map(Interaction::getEventId)
-                .toList();
-
         // 2. Создаем контекст пользователя
-        // Мапа: просмотренное событие → оценка пользователя, для всех событий, которые оценивал пользователь
-        List<Interaction> userInteractions = interactionRepository.findAllByUserId(userId);
-        Map<Long, Double> userRatingsMap = userInteractions.stream()
+        // Мапа: просмотренное событие → рейтинг пользователя
+        Map<Long, Double> userRatings = userInteractions.stream()
                 .collect(Collectors.toMap(
                         Interaction::getEventId,
-                        Interaction::getWeight
+                        Interaction::getWeight,
+                        (a, b) -> a
                 ));
 
+        // Множество ID мероприятий, с которыми пользователь уже взаимодействовал
+//        Set<Long> interactedEvents = new HashSet<>(userRatings.keySet());
+        Set<Long> interactedEvents = userInteractions.stream()
+                .map(Interaction::getEventId)
+                .collect(Collectors.toSet());
+
         // 3. Этап 1: Находим кандидатов (мероприятия, которые будем рекомендовать)
-        List<RecommendedEventDto> candidates = findCandidates(interactedEventsIds, userRatingsMap);
+        List<Candidate> candidates = findCandidates(interactedEvents);
 
         // 4. Этап 2: Предсказываем оценки для кандидатов
         List<RecommendedEventDto> recommendations = predictScores(candidates, userRatings);
@@ -70,19 +71,32 @@ public class RecommendationServiceImpl implements RecommendationService {
 
     // ==================== ЭТАП 1: ПОИСК КАНДИДАТОВ ====================
 
-    private List<RecommendedEventDto> findCandidates(List <Long> interactedEvents, Map<Long, Double> userRatingsMap, int maxResults) {
-        // 1. Получаем LIMIT_SIMILARITY самых похожих мероприятий на те, что пользователь уже оценивал
-        List<Similarity> allSimilarities = similarityRepository.findByEventIds(interactedEvents, PageRequest.of(0, LIMIT_SIMILARITY));
+    private List<Candidate> findCandidates(Set<Long> interactedEvents) {
+        // 1. Получаем по LIMIT_SIMILARITY похожих мероприятий для каждого просмотренного пользователем события, одним запросом
+        List<Similarity> allSimilarities = similarityRepository.findTopNByEventIds(new ArrayList<>(interactedEvents), LIMIT_SIMILARITY);  // toDo вынести лимит в пропс
+
+        // 2. Разбираем, к какому просмотренному событию какая похожесть относится, eventId -> List<Similarity>
+        Map<Long, List<Similarity>> similaritiesByCandidate = groupSimilaritiesByCandidate(
+                allSimilarities,
+                interactedEvents
+        );
 
         // 3. Отбираем самых похожих кандидатов, в которых еще не участовал пользователь.
-        return allSimilarities.stream()
-                .filter(simEvnt -> !(userRatingsMap.containsKey(simEvnt.getEvent1()) || userRatingsMap.containsKey(simEvnt.getEvent2()) )) // только те, в которых не участвовал user
-                .sorted()
-                .limit(maxResults) // ограничиваем число кандидатов
-                .map(simEvnt -> {
-                    Long eventId = interactedEvents.contains(simEvnt.getEvent1())? simEvnt.getEvent2(): simEvnt.getEvent1();
-                    return RecommendedEventDto.builder().eventId(eventId).score(simEvnt.getSimilarity()).build();
+        return similaritiesByCandidate.entrySet().stream()
+                .map(entry -> {
+                    Long candidateId = entry.getKey();
+                    List<Similarity> similarities = entry.getValue();
+
+                    // Суммируем все коэффициенты сходства
+                    double totalSimilarity = similarities.stream()
+                            .mapToDouble(Similarity::getSimilarity)
+                            .sum();
+
+                    return new Candidate(candidateId, similarities, totalSimilarity);
                 })
+                .filter(candidate -> !interactedEvents.contains(candidate.getId())) // только те, в которых не участвовал user
+                .sorted(Comparator.comparing(Candidate::getTotalSimilarity).reversed())
+                .limit(N_MAX_RECENT_INTERACTIONS) // ограничиваем кандидатов
                 .collect(Collectors.toList());
     }
 

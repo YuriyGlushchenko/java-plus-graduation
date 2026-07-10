@@ -2,6 +2,7 @@ package ru.practicum.analyzer.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.analyzer.model.Similarity;
@@ -51,7 +52,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     public List<Similarity> getTopSimilarities(Long eventId, int limit) {
         return similarityRepository.findTopNByEventId(
                 eventId,
-                org.springframework.data.domain.PageRequest.of(0, limit)
+                PageRequest.of(0, limit)
         );
     }
 }
