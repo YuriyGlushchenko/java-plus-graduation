@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS interactions (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id BIGINT NOT NULL,
     event_id BIGINT NOT NULL,
-    waight FLOAT NOT NULL,
+    weight FLOAT NOT NULL,
     timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
     UNIQUE (user_id, event_id)
 );
@@ -17,3 +17,9 @@ CREATE TABLE IF NOT EXISTS similarities (
     UNIQUE (event1, event2),
     CHECK (event1 < event2)
 );
+
+CREATE INDEX IF NOT EXISTS idx_similarities_event1_similarity
+    ON similarities (event1, similarity DESC);
+
+CREATE INDEX IF NOT EXISTS idx_similarities_event2_similarity
+    ON similarities (event2, similarity DESC);
