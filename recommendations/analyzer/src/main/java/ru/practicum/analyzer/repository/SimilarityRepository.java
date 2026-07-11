@@ -12,16 +12,16 @@ import java.util.Collection;
 import java.util.List;
 
 public interface SimilarityRepository extends JpaRepository<Similarity, Long> {
-    // Получить все сходства для мероприятия (по event1 или event2)
+    // Получить все сходства для заданного мероприятия (по event1 или event2)
     @Query("SELECT s FROM Similarity s WHERE s.event1 = :eventId OR s.event2 = :eventId ORDER BY s.similarity DESC")
     List<Similarity> findByEventId(@Param("eventId") Long eventId);
 
-    // Получить топ-N похожих мероприятий
+    // Получить топ-N похожих мероприятий на одно данное с eventId
     @Query("SELECT s FROM Similarity s WHERE s.event1 = :eventId OR s.event2 = :eventId ORDER BY s.similarity DESC")
     List<Similarity> findTopNByEventId(@Param("eventId") Long eventId, Pageable pageable);
 
-    // метод возвращает список мероприятий (проекция id и score), которые похожи на мероприятия из списка eventIds
-    // при этом сразу отсекаются события в которых уже отметился пользователь userId
+    // Метод возвращает список мероприятий (проекция для id и score), которые похожи на мероприятия из переданного списка eventIds.
+    // При этом, сразу отсекаются события, в которых уже отметился пользователь с userId
     @Query(value = """
             SELECT
                 CASE
@@ -47,14 +47,15 @@ public interface SimilarityRepository extends JpaRepository<Similarity, Long> {
                     )
                 )
             GROUP BY eventId
-            ORDER BY similarity DESC
+            ORDER BY s.similarity DESC,
+                     eventId
             LIMIT :limit
             """, nativeQuery = true)
     List<RecommendedEventProjection> findRecommendedEvents(@Param("eventIds") Collection<Long> eventIds,
                                                            @Param("userId") Long userId,
                                                            @Param("limit") int limit);
 
-    // Получить K наиболее похожих мероприятий, с которыми пользователь уже взаимодействовал
+    // "Получить K наиболее похожих мероприятий, с которыми пользователь уже взаимодействовал" - ищем соседей по подобию
     @Query(value = """
             SELECT
                 CASE
@@ -71,7 +72,8 @@ public interface SimilarityRepository extends JpaRepository<Similarity, Long> {
                     s.event2 = :candidateEvent
                     AND s.event1 IN (:userEvents)
                 )
-            ORDER BY s.similarity DESC
+            ORDER BY s.similarity DESC,
+                     eventId
             LIMIT :limit
             """, nativeQuery = true)
     List<NeighborProjection> findNearestNeighbors(@Param("candidateEvent") Long candidateEvent,

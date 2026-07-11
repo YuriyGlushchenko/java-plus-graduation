@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import ru.practicum.analyzer.model.Interaction;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,4 +31,14 @@ public interface InteractionRepository extends JpaRepository<Interaction, Long> 
 
     // 6. Получить все взаимодействия для мероприятия (для расчета сходства)
     List<Interaction> findAllByEventId(Long eventId);
+
+    @Query("""
+            SELECT i
+            FROM Interaction i
+            WHERE i.userId = :userId
+            AND i.eventId IN :eventIds
+            """)
+    List<Interaction> findAllByUserIdAndEventIdIn(
+            Long userId,
+            Collection<Long> eventIds);
 }

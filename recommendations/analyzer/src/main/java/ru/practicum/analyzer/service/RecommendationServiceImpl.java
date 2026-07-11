@@ -27,17 +27,17 @@ public class RecommendationServiceImpl implements RecommendationService {
     private final SimilarityRepository similarityRepository;
 
     private static final int N_MAX_RECENT_INTERACTIONS = 10;
-    private static final int LIMIT_SIMILARITY = 100;
-    private static final int K_NEIGHBORS = 5;
+    private static final int LIMIT_SIMILARITY = 20;
+    private static final int K_NEIGHBORS = 20;
 
-    // ==================== ГЛАВНЫЙ МЕТОД ====================
+    // ==================== предсказание оценки ===================
 
     @Transactional(readOnly = true)
     @Override
     public List<RecommendedEventDto> getRecommendationsForUser(Long userId, int maxResults) {
         log.debug("Getting recommendations for user {}", userId);
 
-        // 1. Получаем последние взаимодействия пользователя
+        // Последние взаимодействия пользователя
         List<Interaction> recentInteractions = interactionRepository.findTopNByUserId(
                 userId,
                 PageRequest.of(0, N_MAX_RECENT_INTERACTIONS)
@@ -56,29 +56,15 @@ public class RecommendationServiceImpl implements RecommendationService {
                 .map(Interaction::getEventId)
                 .toList();
 
-        // Карта оценок пользователя
-        Map<Long, Double> userRatings = allInteractions.stream()
-                .collect(Collectors.toMap(
-                        Interaction::getEventId,
-                        Interaction::getWeight
-                ));
-
-        // Все просмотренные мероприятия
-        List<Long> userEventIds = allInteractions.stream()
-                .map(Interaction::getEventId)
-                .toList();
-
-        // ЭТАП 1
-        List<RecommendedEventProjection> candidates =
-                findRecommendedEvents(recentEventIds, userId);
+        // ЭТАП 1, Подбор мероприятий
+        List<RecommendedEventProjection> candidates = findRecommendedEvents(recentEventIds, userId);
 
         if (candidates.isEmpty()) {
             return List.of();
         }
 
-        // ЭТАП 2
-        List<RecommendedEventDto> recommendations =
-                predictScores(candidates, userRatings, userEventIds);
+        // ЭТАП 2, Вычисление оценки
+        List<RecommendedEventDto> recommendations = predictScores(candidates, allInteractions);
 
         return recommendations.stream()
                 .sorted(Comparator.comparing(RecommendedEventDto::getScore).reversed())
@@ -86,7 +72,6 @@ public class RecommendationServiceImpl implements RecommendationService {
                 .toList();
     }
 
-    // ==================== ЭТАП 1 ====================
 
     private List<RecommendedEventProjection> findRecommendedEvents(List<Long> recentEventIds,
                                                                    Long userId) {
@@ -98,11 +83,20 @@ public class RecommendationServiceImpl implements RecommendationService {
         );
     }
 
-    // ==================== ЭТАП 2 ====================
-
     private List<RecommendedEventDto> predictScores(List<RecommendedEventProjection> candidates,
-                                                    Map<Long, Double> userRatings,
-                                                    List<Long> userEventIds) {
+                                                    List<Interaction> allInteractions) {
+        // Карта оценок пользователя
+        Map<Long, Double> userRatings = allInteractions.stream()
+                .collect(Collectors.toMap(
+                        Interaction::getEventId,
+                        Interaction::getWeight
+                ));
+
+        // Все просмотренные пользователем мероприятия
+        List<Long> userEventIds = allInteractions.stream()
+                .map(Interaction::getEventId)
+                .toList();
+
 
         return candidates.stream()
                 .map(candidate -> predictScore(candidate, userRatings, userEventIds))
@@ -113,45 +107,45 @@ public class RecommendationServiceImpl implements RecommendationService {
                                              Map<Long, Double> userRatings,
                                              List<Long> userEventIds) {
 
-        List<NeighborProjection> neighbors =
-                similarityRepository.findNearestNeighbors(
+        List<NeighborProjection> neighbors = similarityRepository.findNearestNeighbors(
                         candidate.getEventId(),
                         userEventIds,
                         K_NEIGHBORS
                 );
 
-        if (neighbors.isEmpty()) {
-            return RecommendedEventDto.builder()
-                    .eventId(candidate.getEventId())
-                    .score(0.0)
-                    .build();
-        }
-
-        double weightedSum = 0.0;
-        double similaritySum = 0.0;
-
-        for (NeighborProjection neighbor : neighbors) {
-
-            Double rating = userRatings.get(neighbor.getEventId());
-
-            if (rating == null) {
-                continue;
-            }
-
-            weightedSum += rating * neighbor.getSimilarity();
-            similaritySum += neighbor.getSimilarity();
-        }
-
-        double predictedScore =
-                similaritySum == 0
-                        ? 0
-                        : weightedSum / similaritySum;
+        double predictedScore = calculatePredictedScore(neighbors, userRatings);
 
         return RecommendedEventDto.builder()
                 .eventId(candidate.getEventId())
                 .score(predictedScore)
                 .build();
     }
+
+    private double calculatePredictedScore(List<NeighborProjection> neighbors, Map<Long, Double> userRatings){
+        if (neighbors.isEmpty()) {
+            return 0.0;
+        }
+
+        double weightedSum = 0.0; // аккумулятор суммы взвешенных оценок (числитель)
+        double similaritySum = 0.0; // аккумулятор суммы всех коэффициентов сходства соседей (знаменатель)
+
+        for (NeighborProjection neighbor : neighbors) {
+
+            Double rating = userRatings.get(neighbor.getEventId()); // берем оценку, которую дал пользователь соседу
+
+            if (rating == null) {
+                continue;
+            }
+
+            weightedSum += rating * neighbor.getSimilarity(); // прибавляем к общей сумме ВЗВЕШЕННЫЙ коэф подобия соседа
+            similaritySum += neighbor.getSimilarity(); // прибавляем коэф сходства соседа к общей сумме
+        }
+
+        // рассчитываем предсказанную оценку
+        return  similaritySum == 0 ? 0 : weightedSum / similaritySum;
+    }
+
+
 
     // ==================== 2. Похожие мероприятия ====================
 
