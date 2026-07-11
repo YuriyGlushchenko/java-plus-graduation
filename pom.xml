@@ -17,10 +17,9 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>stats-service</module>
+        <module>stats</module>
         <module>infra</module>
         <module>core</module>
-        <module>recommendations</module>
     </modules>
 
     <properties>

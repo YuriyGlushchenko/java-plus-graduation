@@ -15,7 +15,6 @@ spring:
             - classpath:config/core/{application}
             - classpath:config/infra/{application}
             - classpath:config/stats/{application}
-            - classpath:config/recommendations/{application}
     retry:
       max-attempts: 20           # количество попыток
       initial-interval: 2000     # начальная задержка в мс (2 секунды)
