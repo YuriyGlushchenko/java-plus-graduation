@@ -95,7 +95,7 @@ public class AggregationStarter {
     }
 
     private void handleRecord(ConsumerRecord<String, SpecificRecordBase> record) {
-        log.debug("топик = {}, партиция = {}, смещение = {}, значение: {}\n",
+        log.debug(" обработка сообщения,  топик = {}, партиция = {}, смещение = {}, значение: {}\n",
                 record.topic(), record.partition(), record.offset(), record.value());
 
         SpecificRecordBase value = record.value();

@@ -37,7 +37,7 @@ public class EventShortDto implements Enrichable  {
 
     private String title;
 
-    private Long views;  // подгружаем отдельно из сервиса статистики
+    private double rating;  // подгружаем через gRPC-клиент сервиса Analyzer
 
     private Long commentsCount;
 

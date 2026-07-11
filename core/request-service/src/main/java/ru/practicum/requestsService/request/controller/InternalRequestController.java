@@ -48,4 +48,12 @@ public class InternalRequestController implements ru.practicum.common.apiContrac
         log.debug("Internal request: get confirmed requests counts for eventIds={}", eventIds);
         return requestService.getConfirmedRequestsCounts(eventIds);
     }
+
+    @GetMapping("/api/requests/check")
+    public boolean hasConfirmedParticipation(
+            @RequestParam Long eventId,
+            @RequestParam Long userId) {
+
+        return requestService.hasConfirmedParticipation(eventId, userId);
+    }
 }

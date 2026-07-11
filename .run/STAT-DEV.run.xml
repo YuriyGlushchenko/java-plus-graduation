@@ -1,0 +1,8 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="STAT-DEV" type="CompoundRunConfigurationType">
+    <toRun name="AggregatorApp" type="Application" />
+    <toRun name="Analyzer-DEV" type="Application" />
+    <toRun name="CollectorApp" type="Application" />
+    <method v="2" />
+  </configuration>
+</component>

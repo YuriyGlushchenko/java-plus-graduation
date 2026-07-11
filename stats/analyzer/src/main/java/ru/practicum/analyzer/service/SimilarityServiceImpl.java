@@ -2,6 +2,7 @@ package ru.practicum.analyzer.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +12,10 @@ import ru.practicum.ewm.stats.avro.EventSimilarityAvro;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 @Slf4j
 @Service
@@ -27,20 +32,35 @@ public class SimilarityServiceImpl implements SimilarityService {
         Double score = eventSimilarityAvro.getScore();
         Instant timestamp = eventSimilarityAvro.getTimestamp();
 
+        try {
+            long event1 = Math.min(eventA, eventB);
+            long event2 = Math.max(eventA, eventB);
 
-        // Гарантируем порядок event1 < event2
-        long event1 = Math.min(eventA, eventB);
-        long event2 = Math.max(eventA, eventB);
+            Optional<Similarity> existing = similarityRepository.findByEvent1AndEvent2(event1, event2);
 
-        Similarity similarity = Similarity.builder()
-                .event1(event1)
-                .event2(event2)
-                .similarity(score)
-                .timestamp(timestamp)
-                .build();
+            if (existing.isPresent()) {
+                // Обновляем существующую запись
+                Similarity similarity = existing.get();
+                similarity.setSimilarity(score);
+                similarity.setTimestamp(timestamp);
+                similarityRepository.save(similarity);
+                log.debug("Updated similarity: {} - {}, score={}", event1, event2, score);
+            } else {
+                // Или создаем новую, раз еще нет
+                Similarity similarity = Similarity.builder()
+                        .event1(event1)
+                        .event2(event2)
+                        .similarity(score)
+                        .timestamp(timestamp)
+                        .build();
+                similarityRepository.save(similarity);
+                log.debug("Saved similarity: {} - {}, score={}", event1, event2, score);
+            }
 
-        similarityRepository.save(similarity);
-        log.debug("Saved similarity: {} - {}, score={}", event1, event2, score);
+        } catch (DataIntegrityViolationException e) {
+            log.warn("Duplicate similarity pair: {} - {}, skipping...", eventA, eventB);
+            // Игнорируем дубликат
+        }
     }
 
     @Override

@@ -23,4 +23,3 @@ eureka:
   instance:
     preferIpAddress: true
     instance-id: "${spring.application.name}:${random.value}"  # уникальный ID экземпляра
-    hostname: localhost

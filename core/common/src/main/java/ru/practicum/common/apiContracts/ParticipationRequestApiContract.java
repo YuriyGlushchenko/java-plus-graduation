@@ -21,4 +21,8 @@ public interface ParticipationRequestApiContract {
 
     @PostMapping("/api/requests/events/count")
     Map<Long, Long> getConfirmedRequestsCounts(@RequestBody List<Long> eventIds);
+
+    @GetMapping("/api/requests/check")
+    boolean hasConfirmedParticipation(@RequestParam Long eventId,
+                                      @RequestParam Long userId);
 }

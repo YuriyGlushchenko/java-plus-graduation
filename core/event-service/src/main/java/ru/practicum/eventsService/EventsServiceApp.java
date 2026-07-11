@@ -13,8 +13,9 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @EnableAspectJAutoProxy // для AOP, логирование через аннотации @Loggable
 @ComponentScan(basePackages = {
         "ru.practicum.eventsService",
-        "ru.practicum.stat",
-        "ru.practicum.common"
+        "ru.practicum.stats",
+        "ru.practicum.common",
+        "ru.practicum.clients"
 })
 public class EventsServiceApp {
     public static void main(String[] args) {

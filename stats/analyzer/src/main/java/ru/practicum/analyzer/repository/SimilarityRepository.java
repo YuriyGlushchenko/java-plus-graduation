@@ -10,8 +10,10 @@ import ru.practicum.analyzer.repository.projection.RecommendedEventProjection;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface SimilarityRepository extends JpaRepository<Similarity, Long> {
+
     // Получить все сходства для заданного мероприятия (по event1 или event2)
     @Query("SELECT s FROM Similarity s WHERE s.event1 = :eventId OR s.event2 = :eventId ORDER BY s.similarity DESC")
     List<Similarity> findByEventId(@Param("eventId") Long eventId);
@@ -19,6 +21,10 @@ public interface SimilarityRepository extends JpaRepository<Similarity, Long> {
     // Получить топ-N похожих мероприятий на одно данное с eventId
     @Query("SELECT s FROM Similarity s WHERE s.event1 = :eventId OR s.event2 = :eventId ORDER BY s.similarity DESC")
     List<Similarity> findTopNByEventId(@Param("eventId") Long eventId, Pageable pageable);
+
+    //  event1 < event2 гарантировано на уровне SQL + в сервисах проверки
+    Optional<Similarity> findByEvent1AndEvent2(Long event1, Long event2);
+
 
     // Метод возвращает список мероприятий (проекция для id и score), которые похожи на мероприятия из переданного списка eventIds.
     // При этом, сразу отсекаются события, в которых уже отметился пользователь с userId

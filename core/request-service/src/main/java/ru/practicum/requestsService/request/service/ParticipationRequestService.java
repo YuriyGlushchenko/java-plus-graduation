@@ -36,5 +36,7 @@ public interface ParticipationRequestService {
      */
     Map<Long, Long> getConfirmedRequestsCounts(List<Long> eventIds);
 
+    boolean hasConfirmedParticipation(Long eventId, Long userId);
+
 
 }

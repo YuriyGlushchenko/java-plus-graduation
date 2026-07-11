@@ -197,4 +197,13 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
         requestRepository.updateStatusByIdIn(ids, status);
         requests.forEach(r -> r.setStatus(status));
     }
+
+
+    @Override
+    public boolean hasConfirmedParticipation(Long eventId, Long userId) {
+        return requestRepository.existsByEventIdAndRequesterIdAndStatus(
+                eventId,
+                userId,
+                RequestStatus.CONFIRMED);
+    }
 }

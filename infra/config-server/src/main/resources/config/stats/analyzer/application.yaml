@@ -14,8 +14,9 @@ kafka:
 
   consumer:
     poll-timeout: 100ms # тайм-аут, в течение которого консьюмер будет ожидать появления новых данных.
+
     similarity:
-      topic: stats.user-actions.v1
+      topic: stats.events-similarity.v1
       properties:
         bootstrap.servers: ${kafka.bootstrap-server}
         group.id: analyzer-group
@@ -32,7 +33,7 @@ kafka:
 
         auto.offset.reset: earliest # Консьюмер начнёт читать данные с самого начала топика при подключении.
         key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
-        value.deserializer: ru.practicum.serialization.UserActionDeserializer
+        value.deserializer: ru.practicum.serialization.SimilarityAvroDeserializer
 
     user-action:
       topic: stats.user-actions.v1
@@ -80,4 +81,4 @@ grpc:
 
 logging:
   level:
-    ru.practicum.aggregator: DEBUG
+    ru.practicum.analyzer: DEBUG

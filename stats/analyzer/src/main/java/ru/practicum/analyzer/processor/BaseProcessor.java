@@ -34,6 +34,7 @@ public abstract class BaseProcessor<T extends SpecificRecordBase> implements Run
 
     @Override
     public void run() {
+        log.info("User processor started");
 
         // регистрируем хук, который при штатном завершении работы вызовет wakeup, сгенерит WakeupException -> отработает finally
         Runtime.getRuntime().addShutdownHook(new Thread(consumer::wakeup));
@@ -41,7 +42,13 @@ public abstract class BaseProcessor<T extends SpecificRecordBase> implements Run
         try {
 
             while (true) {
+//                log.info("Before poll");
+
                 ConsumerRecords<String, T> records = consumer.poll(kafkaProps.getConsumer().getPollTimeout());
+
+//                log.info("[{}] After poll {}",
+//                        Thread.currentThread().getName(),
+//                        records.count());
 
                 int count = 0;
                 for (ConsumerRecord<String, T> record : records) {

@@ -12,6 +12,7 @@ import ru.practicum.ewm.stats.avro.UserActionAvro;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -30,24 +31,31 @@ public class InteractionServiceImpl implements InteractionService {
 
 
         // Ищем существующее взаимодействие
-        var existing = interactionRepository.findByUserIdAndEventId(userId, eventId);
+        Optional<Interaction> existing = interactionRepository.findByUserIdAndEventId(userId, eventId);
 
-        // Если есть и новый вес меньше или равен старому — пропускаем
-        if (existing.isPresent() && existing.get().getWeight() >= weight) {
-            log.debug("Weight not changed: user={}, event={}, existing={}, new={}",
-                    userId, eventId, existing.get().getWeight(), weight);
-            return;
+        if (existing.isPresent()) {
+            Interaction interaction = existing.get();
+
+            interaction.setWeight(weight);
+            interaction.setTimestamp(timestamp);
+
+            interactionRepository.save(interaction);
+
+            log.debug("Updated interaction: user={}, event={}, weight={}",
+                    userId, eventId, weight);
+        } else {
+            Interaction interaction = Interaction.builder()
+                    .userId(userId)
+                    .eventId(eventId)
+                    .weight(weight)
+                    .timestamp(timestamp)
+                    .build();
+
+            interactionRepository.save(interaction);
+
+            log.debug("Created interaction: user={}, event={}, weight={}",
+                    userId, eventId, weight);
         }
-
-        Interaction interaction = Interaction.builder()
-                .userId(userId)
-                .eventId(eventId)
-                .weight(weight)
-                .timestamp(timestamp)
-                .build();
-
-        interactionRepository.save(interaction);
-        log.debug("Saved interaction: user={}, event={}, weight={}", userId, eventId, weight);
     }
 
     @Override

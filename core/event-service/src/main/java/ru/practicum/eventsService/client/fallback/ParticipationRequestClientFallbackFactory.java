@@ -83,6 +83,11 @@ public class ParticipationRequestClientFallbackFactory implements FallbackFactor
                 eventIds.forEach(id -> fallbackMap.put(id, -1L));
                 return fallbackMap;
             }
+
+            @Override
+            public boolean hasConfirmedParticipation(Long eventId, Long userId) {
+                return false;
+            }
         };
     }
 }

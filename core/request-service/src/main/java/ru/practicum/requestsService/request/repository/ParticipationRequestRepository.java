@@ -42,4 +42,9 @@ public interface ParticipationRequestRepository extends JpaRepository<Participat
             @Param("status") RequestStatus status
     );
 
+
+    boolean existsByEventIdAndRequesterIdAndStatus(Long eventId,
+                                                   Long requesterId,
+                                                   RequestStatus status);
+
 }
