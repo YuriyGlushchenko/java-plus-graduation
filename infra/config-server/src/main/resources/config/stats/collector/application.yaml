@@ -2,7 +2,7 @@ server:
   port: ${PORT:0}
 
 kafka:
-  bootstrap-server: localhost:9092
+  bootstrap-server: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 
   producer:
     user-action-topic: stats.user-actions.v1
