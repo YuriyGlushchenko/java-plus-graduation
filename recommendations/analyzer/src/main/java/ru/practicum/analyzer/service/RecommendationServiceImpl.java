@@ -1,7 +1,5 @@
 package ru.practicum.analyzer.service;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -27,7 +25,7 @@ public class RecommendationServiceImpl implements RecommendationService {
     private final SimilarityRepository similarityRepository;
 
     private static final int N_MAX_RECENT_INTERACTIONS = 10;
-    private static final int LIMIT_SIMILARITY = 20;
+    private static final int LIMIT_SIMILARITY = 100;
     private static final int K_NEIGHBORS = 20;
 
     // ==================== предсказание оценки ===================
@@ -47,73 +45,42 @@ public class RecommendationServiceImpl implements RecommendationService {
             log.debug("User {} has no interactions", userId);
             return List.of();
         }
-
-        // Все взаимодействия пользователя (для расчета рейтингов)
-        List<Interaction> allInteractions = interactionRepository.findAllByUserId(userId);
-
+        log.debug("User {} has {} recent interactions", userId, recentInteractions.size());
         // ID последних мероприятий (для поиска кандидатов)
         List<Long> recentEventIds = recentInteractions.stream()
                 .map(Interaction::getEventId)
                 .toList();
 
         // ЭТАП 1, Подбор мероприятий
-        List<RecommendedEventProjection> candidates = findRecommendedEvents(recentEventIds, userId);
+        List<RecommendedEventProjection> candidates = similarityRepository.findRecommendedEvents(
+                recentEventIds,
+                userId,
+                LIMIT_SIMILARITY
+        );
 
         if (candidates.isEmpty()) {
             return List.of();
         }
 
         // ЭТАП 2, Вычисление оценки
-        List<RecommendedEventDto> recommendations = predictScores(candidates, allInteractions);
-
-        return recommendations.stream()
+        return candidates.stream()
+                .map(candidate -> predictScore(candidate, userId))
                 .sorted(Comparator.comparing(RecommendedEventDto::getScore).reversed())
                 .limit(maxResults)
                 .toList();
-    }
 
-
-    private List<RecommendedEventProjection> findRecommendedEvents(List<Long> recentEventIds,
-                                                                   Long userId) {
-
-        return similarityRepository.findRecommendedEvents(
-                recentEventIds,
-                userId,
-                LIMIT_SIMILARITY
-        );
-    }
-
-    private List<RecommendedEventDto> predictScores(List<RecommendedEventProjection> candidates,
-                                                    List<Interaction> allInteractions) {
-        // Карта оценок пользователя
-        Map<Long, Double> userRatings = allInteractions.stream()
-                .collect(Collectors.toMap(
-                        Interaction::getEventId,
-                        Interaction::getWeight
-                ));
-
-        // Все просмотренные пользователем мероприятия
-        List<Long> userEventIds = allInteractions.stream()
-                .map(Interaction::getEventId)
-                .toList();
-
-
-        return candidates.stream()
-                .map(candidate -> predictScore(candidate, userRatings, userEventIds))
-                .toList();
     }
 
     private RecommendedEventDto predictScore(RecommendedEventProjection candidate,
-                                             Map<Long, Double> userRatings,
-                                             List<Long> userEventIds) {
+                                             Long userId) {
 
         List<NeighborProjection> neighbors = similarityRepository.findNearestNeighbors(
-                        candidate.getEventId(),
-                        userEventIds,
-                        K_NEIGHBORS
-                );
+                candidate.getEventId(),
+                userId,
+                K_NEIGHBORS
+        );
 
-        double predictedScore = calculatePredictedScore(neighbors, userRatings);
+        double predictedScore = calculatePredictedScore(neighbors);
 
         return RecommendedEventDto.builder()
                 .eventId(candidate.getEventId())
@@ -121,7 +88,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                 .build();
     }
 
-    private double calculatePredictedScore(List<NeighborProjection> neighbors, Map<Long, Double> userRatings){
+    private double calculatePredictedScore(List<NeighborProjection> neighbors) {
         if (neighbors.isEmpty()) {
             return 0.0;
         }
@@ -131,20 +98,15 @@ public class RecommendationServiceImpl implements RecommendationService {
 
         for (NeighborProjection neighbor : neighbors) {
 
-            Double rating = userRatings.get(neighbor.getEventId()); // берем оценку, которую дал пользователь соседу
+            Double rating =neighbor.getUserRating(); // берем оценку, которую дал пользователь соседу
 
-            if (rating == null) {
-                continue;
-            }
-
-            weightedSum += rating * neighbor.getSimilarity(); // прибавляем к общей сумме ВЗВЕШЕННЫЙ коэф подобия соседа
+            weightedSum += rating * neighbor.getSimilarity(); // прибавляем к общей сумме ВЗВЕШЕННУЮ оценку
             similaritySum += neighbor.getSimilarity(); // прибавляем коэф сходства соседа к общей сумме
         }
 
         // рассчитываем предсказанную оценку
-        return  similaritySum == 0 ? 0 : weightedSum / similaritySum;
+        return similaritySum == 0 ? 0 : weightedSum / similaritySum;
     }
-
 
 
     // ==================== 2. Похожие мероприятия ====================
@@ -185,23 +147,7 @@ public class RecommendationServiceImpl implements RecommendationService {
     public List<RecommendedEventDto> getInteractionsCount(List<Long> eventIds) {
         log.debug("Getting interactions count for {} events", eventIds.size());
 
-        Map<Long, Double> eventWeights = new HashMap<>();
+        return interactionRepository.findTotalWeightsByEventIds(eventIds);
 
-        for (Long eventId : eventIds) {
-            // Суммируем все взаимодействия для мероприятия
-            List<Interaction> interactions = interactionRepository.findAllByEventId(eventId);
-            double totalWeight = interactions.stream()
-                    .mapToDouble(Interaction::getWeight)
-                    .sum();
-
-            eventWeights.put(eventId, totalWeight);
-        }
-
-        return eventWeights.entrySet().stream()
-                .map(entry -> RecommendedEventDto.builder()
-                        .eventId(entry.getKey())
-                        .score(entry.getValue())
-                        .build())
-                .collect(Collectors.toList());
     }
 }

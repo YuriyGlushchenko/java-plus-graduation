@@ -6,4 +6,6 @@ public interface NeighborProjection {
 
     Double getSimilarity();
 
+    Double getUserRating();
+
 }

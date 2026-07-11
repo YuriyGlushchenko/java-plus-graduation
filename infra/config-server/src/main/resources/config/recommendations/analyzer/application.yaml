@@ -18,8 +18,8 @@ kafka:
       topic: stats.user-actions.v1
       properties:
         bootstrap.servers: ${kafka.bootstrap-server}
-        group.id: aggregator-group
-        client.id: aggregator-consumer
+        group.id: analyzer-group
+        client.id: analyzer-similarity-consumer
         max.poll.records: 100 # максимум записей, которые может вернуть вызов метода poll за раз
         fetch.max.bytes: 3072000 # максимальный размер данных, которые может вернуть вызов метода poll за раз
         fetch.min.bytes: 1 # минимальный объём данных, который хотелось бы получить в результате выборки (для оптимизации сети)
@@ -38,8 +38,8 @@ kafka:
       topic: stats.user-actions.v1
       properties:
         bootstrap.servers: ${kafka.bootstrap-server}
-        group.id: aggregator-group
-        client.id: aggregator-consumer
+        group.id: analyzer-group
+        client.id: analyzer-action-consumer
         max.poll.records: 100 # максимум записей, которые может вернуть вызов метода poll за раз
         fetch.max.bytes: 3072000 # максимальный размер данных, которые может вернуть вызов метода poll за раз
         fetch.min.bytes: 1 # минимальный объём данных, который хотелось бы получить в результате выборки (для оптимизации сети)

@@ -55,28 +55,34 @@ public interface SimilarityRepository extends JpaRepository<Similarity, Long> {
                                                            @Param("userId") Long userId,
                                                            @Param("limit") int limit);
 
-    // "Получить K наиболее похожих мероприятий, с которыми пользователь уже взаимодействовал" - ищем соседей по подобию
+    // "Получить K наиболее похожих мероприятий, с которыми пользователь уже взаимодействовал" - ищем соседей по подобию.
+    // Сразу получаем на выходе проекцию с оценкой пользователя (eventId, similarity, rating), без доп запросов.
+    // Учитываются только события, с которыми пользователь уже взаимодействовал благодаря i.user_id = :userId
     @Query(value = """
-            SELECT
-                CASE
-                    WHEN s.event1 = :candidateEvent THEN s.event2
-                    ELSE s.event1
-                END AS eventId,
-                s.similarity AS similarity
-            FROM similarities s
-            WHERE (
-                    s.event1 = :candidateEvent
-                    AND s.event2 IN (:userEvents)
-                )
-               OR (
-                    s.event2 = :candidateEvent
-                    AND s.event1 IN (:userEvents)
-                )
-            ORDER BY s.similarity DESC,
-                     eventId
-            LIMIT :limit
-            """, nativeQuery = true)
-    List<NeighborProjection> findNearestNeighbors(@Param("candidateEvent") Long candidateEvent,
-                                                  @Param("userEvents") Collection<Long> userEvents,
-                                                  @Param("limit") int limit);
+        SELECT
+            CASE
+                WHEN s.event1 = :candidateEvent THEN s.event2
+                ELSE s.event1
+            END AS eventId,
+            s.similarity AS similarity,
+            i.weight AS userRating
+        FROM similarities s
+        JOIN interactions i
+            ON (
+                s.event1 = :candidateEvent
+                AND s.event2 = i.event_id
+            )
+            OR (
+                s.event2 = :candidateEvent
+                AND s.event1 = i.event_id
+            )
+        WHERE i.user_id = :userId
+        ORDER BY s.similarity DESC,
+                 eventId
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<NeighborProjection> findNearestNeighbors(
+            @Param("candidateEvent") Long candidateEvent,
+            @Param("userId") Long userId,
+            @Param("limit") int limit);
 }
