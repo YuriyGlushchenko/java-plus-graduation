@@ -1,9 +1,11 @@
 package ru.practicum.requestsService.request.service;
 
+import jakarta.ws.rs.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.clients.collector.CollectorGrpcClient;
 import ru.practicum.common.aop.annotation.Loggable;
 import ru.practicum.common.dto.events.EventBaseDto;
 import ru.practicum.common.dto.events.EventState;
@@ -33,11 +35,15 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
     private final ParticipationRequestRepository requestRepository;
     private final UserClient userClient;
     private final EventClient eventClient;
+    private final CollectorGrpcClient collectorGrpcClient;
 
 
     @Override
     @Loggable
     public ParticipationRequestDto createRequest(Long userId, Long eventId) {
+
+        registerToEvent(userId, eventId); // отправляем в коллектор информацию, что пользователь попытался зарегистрироваться на событие
+
         // DataIntegrityViolationException c 409 кодом и так будет при нарушении уникальности в БД, но можно и явно проверить
         if (requestRepository.existsByEventIdAndRequesterId(eventId, userId)) {
             throw new ConditionsNotMetException("Request already exists for this event");
@@ -205,5 +211,15 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
                 eventId,
                 userId,
                 RequestStatus.CONFIRMED);
+    }
+
+
+
+    @Transactional
+    private void registerToEvent(long userId, long eventId) {
+
+        collectorGrpcClient.register(userId, eventId);
+
+        log.info("User {} registered for event {}", userId, eventId);
     }
 }

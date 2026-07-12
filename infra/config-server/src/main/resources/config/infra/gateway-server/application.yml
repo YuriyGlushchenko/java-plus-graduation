@@ -57,6 +57,27 @@ spring:
           filters:
             - StripPrefix=0
 
+
+
+        - id: recommendations-service
+          uri: lb://event-service
+          predicates:
+            - Path=/events/recommendations
+          filters:
+            - StripPrefix=0
+
+
+        - id: likes-service
+          uri: lb://event-service
+          predicates:
+            - Path=/events/{eventId}/like
+          filters:
+            - StripPrefix=0
+
+
+
+
+
         - id: events-admin-service
           uri: lb://event-service
           predicates:

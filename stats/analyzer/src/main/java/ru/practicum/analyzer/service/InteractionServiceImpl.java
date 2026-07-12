@@ -38,6 +38,11 @@ public class InteractionServiceImpl implements InteractionService {
 
             if(weight > interaction.getWeight()){
                 interaction.setWeight(weight);
+                log.trace("Weight updated: user={}, event={}, weight={}",
+                        userId, eventId, weight);
+            } else {
+                log.trace("Weight not updated: user={}, event={}, weight={}",
+                        userId, eventId, weight);
             }
             interaction.setTimestamp(timestamp);
 
