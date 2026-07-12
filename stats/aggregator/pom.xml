@@ -63,8 +63,14 @@
         </dependency>
 
 
-    </dependencies>
+        <!--НЕ НУЖЕН, НО БЕЗ ВЕБ-КОНТЕКСТА НЕ РЕГИСТРИРУЕТСЯ В EURECA, А ТЕСТЫ ПРОВЕРЯЮТ РЕГИСТРАЦИЮ И ПАДАЮТ-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
 
+
+    </dependencies>
 
 
     <build>
