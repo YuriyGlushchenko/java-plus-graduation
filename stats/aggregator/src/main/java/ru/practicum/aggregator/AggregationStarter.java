@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class AggregationStarter {
+public class AggregationStarter implements Runnable {
 
     private static final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new ConcurrentHashMap<>();
     private final KafkaProps kafkaProps;
@@ -29,7 +29,8 @@ public class AggregationStarter {
     private final KafkaConsumer<Long, SpecificRecordBase> consumer;
     private final SimilarityService similarityService;
 
-    public void start() {
+    @Override
+    public void run() {
 
         // регистрируем хук, который при штатном завершении работы вызовет wakeup, сгенерит WakeupException -> отработает finally
         Runtime.getRuntime().addShutdownHook(new Thread(consumer::wakeup));

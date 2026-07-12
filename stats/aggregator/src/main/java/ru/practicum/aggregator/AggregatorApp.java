@@ -13,7 +13,12 @@ public class AggregatorApp {
     public static void main(String[] args) {
         ConfigurableApplicationContext context = SpringApplication.run(AggregatorApp.class, args);
 
-        AggregationStarter aggregator = context.getBean(AggregationStarter.class);
-        aggregator.start();
+        final AggregationStarter aggregationStarter = context.getBean(AggregationStarter.class);
+
+        // запускаем в отдельном потоке
+        Thread aggregatorThread = new Thread(aggregationStarter);
+        aggregatorThread.setName("aggregatorThread");
+        aggregatorThread.start();
+
     }
 }
