@@ -65,28 +65,28 @@ public interface SimilarityRepository extends JpaRepository<Similarity, Long> {
     // Сразу получаем на выходе проекцию с оценкой пользователя (eventId, similarity, rating), без доп запросов.
     // Учитываются только события, с которыми пользователь уже взаимодействовал благодаря i.user_id = :userId
     @Query(value = """
-        SELECT
-            CASE
-                WHEN s.event1 = :candidateEvent THEN s.event2
-                ELSE s.event1
-            END AS eventId,
-            s.similarity AS similarity,
-            i.weight AS userRating
-        FROM similarities s
-        JOIN interactions i
-            ON (
-                s.event1 = :candidateEvent
-                AND s.event2 = i.event_id
-            )
-            OR (
-                s.event2 = :candidateEvent
-                AND s.event1 = i.event_id
-            )
-        WHERE i.user_id = :userId
-        ORDER BY s.similarity DESC,
-                 eventId
-        LIMIT :limit
-        """, nativeQuery = true)
+            SELECT
+                CASE
+                    WHEN s.event1 = :candidateEvent THEN s.event2
+                    ELSE s.event1
+                END AS eventId,
+                s.similarity AS similarity,
+                i.weight AS userRating
+            FROM similarities s
+            JOIN interactions i
+                ON (
+                    s.event1 = :candidateEvent
+                    AND s.event2 = i.event_id
+                )
+                OR (
+                    s.event2 = :candidateEvent
+                    AND s.event1 = i.event_id
+                )
+            WHERE i.user_id = :userId
+            ORDER BY s.similarity DESC,
+                     eventId
+            LIMIT :limit
+            """, nativeQuery = true)
     List<NeighborProjection> findNearestNeighbors(
             @Param("candidateEvent") Long candidateEvent,
             @Param("userId") Long userId,

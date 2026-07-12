@@ -8,9 +8,9 @@ protocol UserActionProtocol {
 	}
 
 	record UserActionAvro {
-		long  userId;  // идентификатор пользователя, совершившего действие;
-		long eventId; //  идентификатор мероприятия, с которым связано действие;
-		ActionTypeAvro actionType; // тип действия;
+		long  userId;
+		long eventId;
+		ActionTypeAvro actionType;
 		timestamp_ms timestamp; // время действия;
 	}
 

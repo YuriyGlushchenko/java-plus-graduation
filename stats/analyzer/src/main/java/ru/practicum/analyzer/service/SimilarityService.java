@@ -3,7 +3,6 @@ package ru.practicum.analyzer.service;
 import ru.practicum.analyzer.model.Similarity;
 import ru.practicum.ewm.stats.avro.EventSimilarityAvro;
 
-import java.time.Instant;
 import java.util.List;
 
 public interface SimilarityService {

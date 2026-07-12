@@ -1,6 +1,5 @@
 package ru.practicum.requestsService.request.service;
 
-import jakarta.ws.rs.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -212,7 +211,6 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
                 userId,
                 RequestStatus.CONFIRMED);
     }
-
 
 
     @Transactional

@@ -4,7 +4,6 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.analyzer.model.Interaction;
 import ru.practicum.ewm.stats.avro.UserActionAvro;
 
-import java.time.Instant;
 import java.util.List;
 
 public interface InteractionService {

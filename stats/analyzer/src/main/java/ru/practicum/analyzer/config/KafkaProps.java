@@ -29,7 +29,7 @@ public class KafkaProps {
     public static class ConsumerConfig {
         private Duration pollTimeout;
         private SimilarityConsumerProps similarity;
-        private UserActionConsumerProps  userAction;
+        private UserActionConsumerProps userAction;
     }
 
     @Setter

@@ -21,12 +21,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RecommendationServiceImpl implements RecommendationService {
 
-    private final InteractionRepository interactionRepository;
-    private final SimilarityRepository similarityRepository;
-
     private static final int N_MAX_RECENT_INTERACTIONS = 10;
     private static final int LIMIT_SIMILARITY = 100;
     private static final int K_NEIGHBORS = 20;
+    private final InteractionRepository interactionRepository;
+    private final SimilarityRepository similarityRepository;
 
     // ==================== предсказание оценки ===================
 
@@ -98,7 +97,7 @@ public class RecommendationServiceImpl implements RecommendationService {
 
         for (NeighborProjection neighbor : neighbors) {
 
-            Double rating =neighbor.getUserRating(); // берем оценку, которую дал пользователь соседу
+            Double rating = neighbor.getUserRating(); // берем оценку, которую дал пользователь соседу
 
             weightedSum += rating * neighbor.getSimilarity(); // прибавляем к общей сумме ВЗВЕШЕННУЮ оценку
             similaritySum += neighbor.getSimilarity(); // прибавляем коэф сходства соседа к общей сумме
@@ -140,7 +139,7 @@ public class RecommendationServiceImpl implements RecommendationService {
 
     }
 
-    // ==================== 3. Количество взаимодействий ====================
+    // ==================== 3. Количество взаимодействий (рейтинг, вместо views) ====================
 
     @Transactional(readOnly = true)
     @Override

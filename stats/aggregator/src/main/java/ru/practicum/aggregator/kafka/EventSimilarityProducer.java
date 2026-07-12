@@ -7,10 +7,8 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.springframework.stereotype.Component;
-
 import ru.practicum.aggregator.config.KafkaProps;
 import ru.practicum.ewm.stats.avro.EventSimilarityAvro;
-import ru.practicum.ewm.stats.avro.UserActionAvro;
 
 import java.util.concurrent.CompletableFuture;
 

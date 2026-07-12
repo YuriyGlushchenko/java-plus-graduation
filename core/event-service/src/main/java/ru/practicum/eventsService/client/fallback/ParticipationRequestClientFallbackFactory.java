@@ -11,7 +11,6 @@ import ru.practicum.common.exceptions.exceptions.ConditionsNotMetException;
 import ru.practicum.common.exceptions.exceptions.NotFoundException;
 import ru.practicum.eventsService.client.ParticipationRequestClient;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

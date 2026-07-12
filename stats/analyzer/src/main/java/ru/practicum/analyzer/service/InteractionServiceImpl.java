@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.analyzer.model.ActionType;
 import ru.practicum.analyzer.model.Interaction;
-import ru.practicum.analyzer.processor.UserActionProcessor;
 import ru.practicum.analyzer.repository.InteractionRepository;
 import ru.practicum.ewm.stats.avro.UserActionAvro;
 
@@ -36,7 +35,7 @@ public class InteractionServiceImpl implements InteractionService {
         if (existing.isPresent()) {
             Interaction interaction = existing.get();
 
-            if(weight > interaction.getWeight()){
+            if (weight > interaction.getWeight()) {
                 interaction.setWeight(weight);
                 log.trace("Weight updated: user={}, event={}, weight={}",
                         userId, eventId, weight);

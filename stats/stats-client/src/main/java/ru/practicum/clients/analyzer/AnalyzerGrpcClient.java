@@ -5,11 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Component;
 import ru.practicum.clients.dto.RecommendedEventDto;
-import ru.practicum.recommendations.proto.InteractionsCountRequestProto;
-import ru.practicum.recommendations.proto.RecommendationsControllerGrpc;
-import ru.practicum.recommendations.proto.RecommendedEventProto;
-import ru.practicum.recommendations.proto.SimilarEventsRequestProto;
-import ru.practicum.recommendations.proto.UserPredictionsRequestProto;
+import ru.practicum.recommendations.proto.*;
 
 import java.util.Iterator;
 import java.util.List;

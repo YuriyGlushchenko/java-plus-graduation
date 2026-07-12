@@ -2,9 +2,9 @@
 protocol EventSimilarityProtocol {
 
 	record EventSimilarityAvro {
-		long  eventA;  // иидентификатор мероприятия A
-		long eventB; //  идентификатор мероприятия B;
-		double  score; // значение рассчитанного сходства мероприятий;
+		long  eventA;
+		long eventB;
+		double  score;
 		timestamp_ms timestamp; // когда было совершено действие, инициировавшее пересчёт.
 	}
 

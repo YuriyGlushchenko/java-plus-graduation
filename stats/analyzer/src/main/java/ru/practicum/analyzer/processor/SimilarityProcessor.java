@@ -1,20 +1,16 @@
 package ru.practicum.analyzer.processor;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.Producer;
 import org.springframework.stereotype.Component;
 import ru.practicum.analyzer.config.KafkaProps;
 import ru.practicum.analyzer.service.SimilarityService;
 import ru.practicum.ewm.stats.avro.EventSimilarityAvro;
 
-import jakarta.annotation.PostConstruct;
-
 @Slf4j
 @Component
-public class SimilarityProcessor extends BaseProcessor<EventSimilarityAvro>  {
+public class SimilarityProcessor extends BaseProcessor<EventSimilarityAvro> {
 
     private final SimilarityService similarityService;
 

@@ -33,8 +33,8 @@ public class SimilarityServiceImpl implements SimilarityService {
         Instant timestamp = eventSimilarityAvro.getTimestamp();
 
         try {
-            long event1 = Math.min(eventA, eventB);
-            long event2 = Math.max(eventA, eventB);
+            long event1 = min(eventA, eventB);
+            long event2 = max(eventA, eventB);
 
             Optional<Similarity> existing = similarityRepository.findByEvent1AndEvent2(event1, event2);
 

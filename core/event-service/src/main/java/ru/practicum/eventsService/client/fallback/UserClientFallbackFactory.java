@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 import ru.practicum.common.dto.users.UserShortDto;
 import ru.practicum.eventsService.client.UserClient;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
