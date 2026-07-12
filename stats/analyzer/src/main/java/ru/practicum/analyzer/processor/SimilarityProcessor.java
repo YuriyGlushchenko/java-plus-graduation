@@ -20,14 +20,14 @@ public class SimilarityProcessor extends BaseProcessor<EventSimilarityAvro>  {
 
     public SimilarityProcessor(
             KafkaProps kafkaProps,
-            KafkaConsumer<String, EventSimilarityAvro> consumer,
+            KafkaConsumer<Long, EventSimilarityAvro> consumer,
             SimilarityService similarityService) {
         super(kafkaProps, consumer);
         this.similarityService = similarityService;
     }
 
     @Override
-    protected void handleRecord(ConsumerRecord<String, EventSimilarityAvro> record) {
+    protected void handleRecord(ConsumerRecord<Long, EventSimilarityAvro> record) {
         EventSimilarityAvro value = record.value();
 
         if (value == null) {

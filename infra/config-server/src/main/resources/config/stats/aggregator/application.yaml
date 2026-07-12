@@ -8,7 +8,7 @@ kafka:
     topic: stats.events-similarity.v1
     properties:
       bootstrap.servers: ${kafka.bootstrap-server}
-      key.serializer: org.apache.kafka.common.serialization.StringSerializer
+      key.serializer: org.apache.kafka.common.serialization.LongSerializer
       value.serializer: ru.practicum.serialization.AvroSerializer # универсальный серриализатор для Avro из модуля serialization
       linger.ms: 0 # время (в миллисекундах), которое продюсер ждет, прежде чем отправить накопленные сообщения.
 
@@ -30,7 +30,7 @@ kafka:
       max.poll.interval.ms: 300000 # 5мин. Макс время (в миллисекундах) между запросы на выборку данных (консьюмер сам отключится от группы при превышении).
 
       auto.offset.reset: earliest # Консьюмер начнёт читать данные с самого начала топика при подключении.
-      key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      key.deserializer: org.apache.kafka.common.serialization.LongDeserializer
       value.deserializer: ru.practicum.serialization.UserActionDeserializer
 
 

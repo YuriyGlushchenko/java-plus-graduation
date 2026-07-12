@@ -8,14 +8,10 @@ kafka:
     user-action-topic: stats.user-actions.v1
     properties:
       bootstrap.servers: ${kafka.bootstrap-server}
-      key.serializer: org.apache.kafka.common.serialization.StringSerializer
+      key.serializer: org.apache.kafka.common.serialization.LongSerializer
       value.serializer: ru.practicum.serialization.AvroSerializer # универсальный серриализатор для Avro из модуля serialization
       linger.ms: 0 # время (в миллисекундах), которое продюсер ждет, прежде чем отправить накопленные сообщения.
 
 grpc:
   server:
     port: ${GRPC_PORT:0}
-
-  client:
-    hub-router:
-      address: 'discovery:///hub-router'

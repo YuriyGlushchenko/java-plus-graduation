@@ -17,14 +17,14 @@ public class UserActionProcessor extends BaseProcessor<UserActionAvro> {
 
     public UserActionProcessor(
             KafkaProps kafkaProps,
-            KafkaConsumer<String, UserActionAvro> consumer,
+            KafkaConsumer<Long, UserActionAvro> consumer,
             InteractionService interactionService) {
         super(kafkaProps, consumer);
         this.interactionService = interactionService;
     }
 
     @Override
-    protected void handleRecord(ConsumerRecord<String, UserActionAvro> record) {
+    protected void handleRecord(ConsumerRecord<Long, UserActionAvro> record) {
         log.debug("топик = {}, партиция = {}, смещение = {}, значение: {}\n",
                 record.topic(), record.partition(), record.offset(), record.value());
 

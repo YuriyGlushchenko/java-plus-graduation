@@ -14,7 +14,7 @@ public class KafkaConfiguration {
     private final KafkaProps kafkaProps;
 
     @Bean
-    public Producer<String, SpecificRecordBase> kafkaProducer() {
+    public Producer<Long, SpecificRecordBase> kafkaProducer() {
         return new KafkaProducer<>(kafkaProps.getProducer().getProperties());
     }
 }

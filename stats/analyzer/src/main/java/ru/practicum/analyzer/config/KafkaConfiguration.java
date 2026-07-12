@@ -16,8 +16,8 @@ public class KafkaConfiguration {
     private final KafkaProps kafkaProps;
 
     @Bean
-    public KafkaConsumer<String, EventSimilarityAvro> similarityConsumer() {
-        KafkaConsumer<String, EventSimilarityAvro> consumer = new KafkaConsumer<>(
+    public KafkaConsumer<Long, EventSimilarityAvro> similarityConsumer() {
+        KafkaConsumer<Long, EventSimilarityAvro> consumer = new KafkaConsumer<>(
                 kafkaProps.getConsumer().getSimilarity().getProperties()
         );
         consumer.subscribe(List.of(kafkaProps.getConsumer().getSimilarity().getTopic()));
@@ -25,8 +25,8 @@ public class KafkaConfiguration {
     }
 
     @Bean
-    public KafkaConsumer<String, UserActionAvro> userActionConsumer() {
-        KafkaConsumer<String, UserActionAvro> consumer = new KafkaConsumer<>(
+    public KafkaConsumer<Long, UserActionAvro> userActionConsumer() {
+        KafkaConsumer<Long, UserActionAvro> consumer = new KafkaConsumer<>(
                 kafkaProps.getConsumer().getUserAction().getProperties()
         );
         consumer.subscribe(List.of(kafkaProps.getConsumer().getUserAction().getTopic()));

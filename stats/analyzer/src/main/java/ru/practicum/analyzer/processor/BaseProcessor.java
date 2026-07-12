@@ -19,18 +19,18 @@ public abstract class BaseProcessor<T extends SpecificRecordBase> implements Run
     private static final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new ConcurrentHashMap<>();
     private final KafkaProps kafkaProps;
     //    private final Producer<String, SpecificRecordBase> producer;
-    private final KafkaConsumer<String, T> consumer;
+    private final KafkaConsumer<Long, T> consumer;
 
     public BaseProcessor(
             KafkaProps kafkaProps,
 //            Producer<String, SpecificRecordBase> producer,
-            KafkaConsumer<String, T> consumer) {
+            KafkaConsumer<Long, T> consumer) {
         this.kafkaProps = kafkaProps;
 //        this.producer = producer;
         this.consumer = consumer;
     }
 
-    protected abstract void handleRecord(ConsumerRecord<String, T> record);
+    protected abstract void handleRecord(ConsumerRecord<Long, T> record);
 
     @Override
     public void run() {
@@ -44,14 +44,14 @@ public abstract class BaseProcessor<T extends SpecificRecordBase> implements Run
             while (true) {
 //                log.info("Before poll");
 
-                ConsumerRecords<String, T> records = consumer.poll(kafkaProps.getConsumer().getPollTimeout());
+                ConsumerRecords<Long, T> records = consumer.poll(kafkaProps.getConsumer().getPollTimeout());
 
 //                log.info("[{}] After poll {}",
 //                        Thread.currentThread().getName(),
 //                        records.count());
 
                 int count = 0;
-                for (ConsumerRecord<String, T> record : records) {
+                for (ConsumerRecord<Long, T> record : records) {
                     handleRecord(record);
                     manageOffsets(record, count);
                     count++;
@@ -88,7 +88,7 @@ public abstract class BaseProcessor<T extends SpecificRecordBase> implements Run
         }
     }
 
-    private void manageOffsets(ConsumerRecord<String, T> record, int count) {
+    private void manageOffsets(ConsumerRecord<Long, T> record, int count) {
         currentOffsets.put(
                 new TopicPartition(record.topic(), record.partition()),
                 new OffsetAndMetadata(record.offset() + 1)

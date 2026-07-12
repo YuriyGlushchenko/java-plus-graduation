@@ -36,7 +36,9 @@ public class InteractionServiceImpl implements InteractionService {
         if (existing.isPresent()) {
             Interaction interaction = existing.get();
 
-            interaction.setWeight(weight);
+            if(weight > interaction.getWeight()){
+                interaction.setWeight(weight);
+            }
             interaction.setTimestamp(timestamp);
 
             interactionRepository.save(interaction);

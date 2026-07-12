@@ -15,13 +15,13 @@ public class KafkaConfiguration {
     private final KafkaProps kafkaProps;
 
     @Bean
-    public Producer<String, SpecificRecordBase> kafkaProducer() {
+    public Producer<Long, SpecificRecordBase> kafkaProducer() {
         return new KafkaProducer<>(kafkaProps.getProducer().getProperties());
     }
 
     @Bean
-    public KafkaConsumer<String, SpecificRecordBase> kafkaConsumer() {
-        KafkaConsumer<String, SpecificRecordBase> consumer = new KafkaConsumer<>(
+    public KafkaConsumer<Long, SpecificRecordBase> kafkaConsumer() {
+        KafkaConsumer<Long, SpecificRecordBase> consumer = new KafkaConsumer<>(
                 kafkaProps.getConsumer().getProperties()
         );
         consumer.subscribe(java.util.List.of(kafkaProps.getConsumer().getTopic()));

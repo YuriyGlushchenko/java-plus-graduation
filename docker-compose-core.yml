@@ -1,0 +1,283 @@
+services:
+
+  stats-db:
+    image: postgres:16.1
+    container_name: stats-db
+    networks:
+      - ewm
+    environment:
+      POSTGRES_DB: stats
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      timeout: 5s
+      interval: 5s
+      retries: 10
+
+  users-db:
+    image: postgres:16.1
+    container_name: users-db
+    networks:
+      - ewm
+    environment:
+      POSTGRES_DB: users
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      timeout: 5s
+      interval: 5s
+      retries: 10
+
+
+  events-db:
+    image: postgres:16.1
+    container_name: events-db
+    networks:
+      - ewm
+    environment:
+      POSTGRES_DB: events
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      timeout: 5s
+      interval: 5s
+      retries: 10
+
+  requests-db:
+    image: postgres:16.1
+    container_name: requests-db
+    networks:
+      - ewm
+    environment:
+      POSTGRES_DB: requests
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      timeout: 5s
+      interval: 5s
+      retries: 10
+
+  comments-db:
+    image: postgres:16.1
+    container_name: comments-db
+    networks:
+      - ewm
+    environment:
+      POSTGRES_DB: comments
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5437:5432"
+    healthcheck:
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      timeout: 5s
+      interval: 5s
+      retries: 10
+
+  discovery-server:
+    build: ./infra/discovery-server
+    container_name: discovery-server
+    networks:
+      - ewm
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8761/actuator/health"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  config-server:
+    build: ./infra/config-server
+    container_name: config-server
+    networks:
+      - ewm
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - MANAGEMENT_SERVER_PORT=8091
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8091/actuator/health" ] #  Используем как healthcheck то, что config-server успешно регистрируется в Eureka.
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  stats-server:
+    build: ./stats-service/stats-server
+    container_name: stats-server
+    networks:
+      - ewm
+    depends_on:
+      stats-db:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/stats
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - MANAGEMENT_SERVER_PORT=8090
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8090/actuator/health" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+
+  event-service:
+    build: ./core/event-service
+    container_name: event-service
+    networks:
+      - ewm
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      events-db:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://events-db:5432/events
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - MANAGEMENT_SERVER_PORT=8092
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8092/actuator/health" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  gateway-server:
+    build: ./infra/gateway-server
+    container_name: gateway-server
+    networks:
+      - ewm
+    ports:
+      - "8080:8080"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      stats-server:
+        condition: service_healthy
+      event-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      request-service:
+        condition: service_healthy
+      comment-service:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  user-service:
+    build: ./core/user-service
+    container_name: user-service
+    networks:
+      - ewm
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      users-db:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://users-db:5432/users
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - MANAGEMENT_SERVER_PORT=8093
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8093/actuator/health" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  request-service:
+    build: ./core/request-service
+    container_name: request-service
+    networks:
+      - ewm
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      requests-db:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://requests-db:5432/requests
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - MANAGEMENT_SERVER_PORT=8094
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8094/actuator/health" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  comment-service:
+    build: ./core/comment-service
+    container_name: comment-service
+    networks:
+      - ewm
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      comments-db:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://comments-db:5432/comments
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - MANAGEMENT_SERVER_PORT=8095
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8095/actuator/health" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+
+
+networks:
+  ewm:
+    driver: bridge
+

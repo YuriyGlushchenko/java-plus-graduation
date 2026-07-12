@@ -19,14 +19,14 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class EventSimilarityProducer {
 
-    private final Producer<String, SpecificRecordBase> producer;
+    private final Producer<Long, SpecificRecordBase> producer;
     private final KafkaProps kafkaProps;
 
     public CompletableFuture<RecordMetadata> sendEventSimilarity(EventSimilarityAvro eventSimilarityAvro) {
-        String key = String.valueOf(eventSimilarityAvro.getEventA());
+        Long key = eventSimilarityAvro.getEventA();
         long timestamp = eventSimilarityAvro.getTimestamp().toEpochMilli();
 
-        ProducerRecord<String, SpecificRecordBase> record = new ProducerRecord<>(
+        ProducerRecord<Long, SpecificRecordBase> record = new ProducerRecord<>(
                 kafkaProps.getProducer().getTopic(),
                 null, // partition — передаём null, чтобы Kafka сам определил партицию по ключу
                 timestamp, // используем timestamp самого действия (влияет на порядок сообщений в брокере, если ключ одинаковый)
@@ -37,7 +37,7 @@ public class EventSimilarityProducer {
         return sendToBroker(record);
     }
 
-    private CompletableFuture<RecordMetadata> sendToBroker(ProducerRecord<String, SpecificRecordBase> record) {
+    private CompletableFuture<RecordMetadata> sendToBroker(ProducerRecord<Long, SpecificRecordBase> record) {
 
         // CompletableFuture - аналог Promise из JS для работы с асинхронным send. Удобно использовать, не блокирует поток.
         CompletableFuture<RecordMetadata> future = new CompletableFuture<>();

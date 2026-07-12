@@ -26,8 +26,10 @@ public interface InteractionRepository extends JpaRepository<Interaction, Long> 
 
     @Query("""
             SELECT
-                i.eventId AS eventId,
-                SUM(i.weight) AS totalWeight
+                new ru.practicum.analyzer.model.RecommendedEventDto(
+                    i.eventId,
+                    SUM(i.weight)
+                )
             FROM Interaction i
             WHERE i.eventId IN :eventIds
             GROUP BY i.eventId

@@ -32,7 +32,7 @@ kafka:
         max.poll.interval.ms: 300000 # 5мин. Макс время (в миллисекундах) между запросы на выборку данных (консьюмер сам отключится от группы при превышении).
 
         auto.offset.reset: earliest # Консьюмер начнёт читать данные с самого начала топика при подключении.
-        key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        key.deserializer: org.apache.kafka.common.serialization.LongDeserializer
         value.deserializer: ru.practicum.serialization.SimilarityAvroDeserializer
 
     user-action:
@@ -52,7 +52,7 @@ kafka:
         max.poll.interval.ms: 300000 # 5мин. Макс время (в миллисекундах) между запросы на выборку данных (консьюмер сам отключится от группы при превышении).
 
         auto.offset.reset: earliest # Консьюмер начнёт читать данные с самого начала топика при подключении.
-        key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        key.deserializer: org.apache.kafka.common.serialization.LongDeserializer
         value.deserializer: ru.practicum.serialization.UserActionDeserializer
 
 spring:

@@ -25,8 +25,8 @@ public class AggregationStarter {
 
     private static final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new ConcurrentHashMap<>();
     private final KafkaProps kafkaProps;
-    private final Producer<String, SpecificRecordBase> producer;
-    private final KafkaConsumer<String, SpecificRecordBase> consumer;
+    private final Producer<Long, SpecificRecordBase> producer;
+    private final KafkaConsumer<Long, SpecificRecordBase> consumer;
     private final SimilarityService similarityService;
 
     public void start() {
@@ -37,10 +37,10 @@ public class AggregationStarter {
         try {
 
             while (true) {
-                ConsumerRecords<String, SpecificRecordBase> records = consumer.poll(kafkaProps.getConsumer().getPollTimeout());
+                ConsumerRecords<Long, SpecificRecordBase> records = consumer.poll(kafkaProps.getConsumer().getPollTimeout());
 
                 int count = 0;
-                for (ConsumerRecord<String, SpecificRecordBase> record : records) {
+                for (ConsumerRecord<Long, SpecificRecordBase> record : records) {
                     handleRecord(record);
                     manageOffsets(record, count);
                     count++;
@@ -78,7 +78,7 @@ public class AggregationStarter {
         }
     }
 
-    private void manageOffsets(ConsumerRecord<String, SpecificRecordBase> record, int count) {
+    private void manageOffsets(ConsumerRecord<Long, SpecificRecordBase> record, int count) {
         currentOffsets.put(
                 new TopicPartition(record.topic(), record.partition()),
                 new OffsetAndMetadata(record.offset() + 1)
@@ -94,7 +94,7 @@ public class AggregationStarter {
         }
     }
 
-    private void handleRecord(ConsumerRecord<String, SpecificRecordBase> record) {
+    private void handleRecord(ConsumerRecord<Long, SpecificRecordBase> record) {
         log.debug(" обработка сообщения,  топик = {}, партиция = {}, смещение = {}, значение: {}\n",
                 record.topic(), record.partition(), record.offset(), record.value());
 
