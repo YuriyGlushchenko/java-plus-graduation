@@ -27,8 +27,6 @@ public class RecommendationServiceImpl implements RecommendationService {
     private final InteractionRepository interactionRepository;
     private final SimilarityRepository similarityRepository;
 
-    // ==================== предсказание оценки ===================
-
     @Transactional(readOnly = true)
     @Override
     public List<RecommendedEventDto> getRecommendationsForUser(Long userId, int maxResults) {
@@ -107,8 +105,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         return similaritySum == 0 ? 0 : weightedSum / similaritySum;
     }
 
-
-    // ==================== 2. Похожие мероприятия ====================
+    // Похожие мероприятия
 
     @Transactional(readOnly = true)
     @Override
@@ -139,7 +136,7 @@ public class RecommendationServiceImpl implements RecommendationService {
 
     }
 
-    // ==================== 3. Количество взаимодействий (рейтинг, вместо views) ====================
+    // Количество взаимодействий (рейтинг, вместо views)
 
     @Transactional(readOnly = true)
     @Override

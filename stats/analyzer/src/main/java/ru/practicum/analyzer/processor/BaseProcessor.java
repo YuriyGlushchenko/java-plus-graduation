@@ -18,15 +18,12 @@ public abstract class BaseProcessor<T extends SpecificRecordBase> implements Run
 
     private static final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new ConcurrentHashMap<>();
     private final KafkaProps kafkaProps;
-    //    private final Producer<String, SpecificRecordBase> producer;
     private final KafkaConsumer<Long, T> consumer;
 
     public BaseProcessor(
             KafkaProps kafkaProps,
-//            Producer<String, SpecificRecordBase> producer,
             KafkaConsumer<Long, T> consumer) {
         this.kafkaProps = kafkaProps;
-//        this.producer = producer;
         this.consumer = consumer;
     }
 
@@ -42,13 +39,8 @@ public abstract class BaseProcessor<T extends SpecificRecordBase> implements Run
         try {
 
             while (true) {
-//                log.info("Before poll");
 
                 ConsumerRecords<Long, T> records = consumer.poll(kafkaProps.getConsumer().getPollTimeout());
-
-//                log.info("[{}] After poll {}",
-//                        Thread.currentThread().getName(),
-//                        records.count());
 
                 int count = 0;
                 for (ConsumerRecord<Long, T> record : records) {
@@ -72,8 +64,6 @@ public abstract class BaseProcessor<T extends SpecificRecordBase> implements Run
             log.error("Ошибка во время обработки чтения сообщений из брокера", e);
         } finally {
             try {
-//                producer.flush(); // сбрасываем данные в буфере
-
                 if (!currentOffsets.isEmpty()) {
                     consumer.commitSync(currentOffsets); // тут синхронно, чтобы убедиться, что все оффсеты зафиксированы.
                 }
@@ -82,8 +72,6 @@ public abstract class BaseProcessor<T extends SpecificRecordBase> implements Run
             } finally {
                 log.info("Закрываем консьюмер");
                 consumer.close();
-//                log.info("Закрываем продюсер");
-//                producer.close();
             }
         }
     }

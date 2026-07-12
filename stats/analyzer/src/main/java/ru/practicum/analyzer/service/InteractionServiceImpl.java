@@ -28,8 +28,6 @@ public class InteractionServiceImpl implements InteractionService {
         Double weight = ActionType.getWeight(userActionAvro.getActionType());
         Instant timestamp = userActionAvro.getTimestamp();
 
-
-        // Ищем существующее взаимодействие
         Optional<Interaction> existing = interactionRepository.findByUserIdAndEventId(userId, eventId);
 
         if (existing.isPresent()) {
@@ -37,18 +35,15 @@ public class InteractionServiceImpl implements InteractionService {
 
             if (weight > interaction.getWeight()) {
                 interaction.setWeight(weight);
-                log.trace("Weight updated: user={}, event={}, weight={}",
-                        userId, eventId, weight);
+                log.trace("Weight updated: user={}, event={}, weight={}", userId, eventId, weight);
             } else {
-                log.trace("Weight not updated: user={}, event={}, weight={}",
-                        userId, eventId, weight);
+                log.trace("Weight not updated: user={}, event={}, weight={}", userId, eventId, weight);
             }
             interaction.setTimestamp(timestamp);
 
             interactionRepository.save(interaction);
 
-            log.debug("Updated interaction: user={}, event={}, weight={}",
-                    userId, eventId, weight);
+            log.debug("Updated interaction: user={}, event={}, weight={}", userId, eventId, weight);
         } else {
             Interaction interaction = Interaction.builder()
                     .userId(userId)
@@ -59,8 +54,7 @@ public class InteractionServiceImpl implements InteractionService {
 
             interactionRepository.save(interaction);
 
-            log.debug("Created interaction: user={}, event={}, weight={}",
-                    userId, eventId, weight);
+            log.debug("Created interaction: user={}, event={}, weight={}", userId, eventId, weight);
         }
     }
 
