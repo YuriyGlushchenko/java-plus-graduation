@@ -112,7 +112,12 @@ public class SimilarityServiceImpl implements SimilarityService {
 
         // 3. Вычисляем сходство
         double totalB = eventTotalWeights.getOrDefault(eventB, 0.0);
-        return newSMin / (Math.sqrt(totalA) * Math.sqrt(totalB));
+        double denominator = Math.sqrt(totalA) * Math.sqrt(totalB);
+        if (denominator == 0) {
+            return 0.0;
+        }
+
+        return newSMin / denominator;
     }
 
     private double getUserWeight(long eventId, long userId) {

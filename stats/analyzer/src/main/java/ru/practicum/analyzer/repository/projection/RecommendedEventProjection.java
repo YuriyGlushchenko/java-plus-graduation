@@ -4,5 +4,5 @@ public interface RecommendedEventProjection {
 
     Long getEventId();
 
-    Float getSimilarity();
+    Double getSimilarity();
 }

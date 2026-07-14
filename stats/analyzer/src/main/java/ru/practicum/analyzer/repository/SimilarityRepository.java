@@ -87,8 +87,38 @@ public interface SimilarityRepository extends JpaRepository<Similarity, Long> {
                      eventId
             LIMIT :limit
             """, nativeQuery = true)
-    List<NeighborProjection> findNearestNeighbors(
-            @Param("candidateEvent") Long candidateEvent,
-            @Param("userId") Long userId,
-            @Param("limit") int limit);
+    List<NeighborProjection> findNearestNeighbors(@Param("candidateEvent") Long candidateEvent,
+                                                  @Param("userId") Long userId,
+                                                  @Param("limit") int limit);
+
+
+    /**
+     * Получить топ-N похожих мероприятий для заданного eventId,
+     * исключая те, с которыми пользователь уже взаимодействовал.
+     */
+    @Query(value = """
+            SELECT
+                CASE
+                    WHEN s.event1 = :eventId THEN s.event2
+                    ELSE s.event1
+                END AS eventId,
+                s.similarity AS similarity
+            FROM similarities s
+            WHERE (s.event1 = :eventId OR s.event2 = :eventId)
+              AND (
+                    (s.event1 = :eventId AND s.event2 NOT IN (
+                        SELECT event_id FROM interactions WHERE user_id = :userId
+                    ))
+                    OR
+                    (s.event2 = :eventId AND s.event1 NOT IN (
+                        SELECT event_id FROM interactions WHERE user_id = :userId
+                    ))
+                  )
+            ORDER BY s.similarity DESC
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<RecommendedEventProjection> findTopSimilarEventsExcludingInteracted(@Param("eventId") Long eventId,
+                                                                             @Param("userId") Long userId,
+                                                                             @Param("limit") int limit);
 }
+
