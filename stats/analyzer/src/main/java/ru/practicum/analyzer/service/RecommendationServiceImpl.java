@@ -7,13 +7,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.analyzer.model.Interaction;
 import ru.practicum.analyzer.model.RecommendedEventDto;
-import ru.practicum.analyzer.model.Similarity;
 import ru.practicum.analyzer.repository.InteractionRepository;
 import ru.practicum.analyzer.repository.SimilarityRepository;
 import ru.practicum.analyzer.repository.projection.NeighborProjection;
 import ru.practicum.analyzer.repository.projection.RecommendedEventProjection;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -112,25 +112,13 @@ public class RecommendationServiceImpl implements RecommendationService {
     public List<RecommendedEventDto> getSimilarEvents(Long eventId, Long userId, int maxResults) {
         log.debug("Getting similar events for event: {}, user: {}", eventId, userId);
 
-        // 1. Получить похожие мероприятия.
-        List<Similarity> similarities = similarityRepository.findByEventId(eventId);
+        List<RecommendedEventProjection> eventProjections = similarityRepository
+                .findTopSimilarEventsExcludingInteracted(eventId, userId, maxResults);
 
-        // 2. Получаем ID мероприятий, с которыми пользователь уже взаимодействовал
-        List<Long> interactedEvents = interactionRepository.findEventIdsByUserId(userId);
-        Set<Long> interactedSet = new HashSet<>(interactedEvents);
-
-        // 3. Исключаем просмотренные мероприятия и сортируем по убыванию, берем N первых
-        return similarities.stream()
-                .map(sim -> {
-                    Long otherId = sim.getEvent1().equals(eventId) ? sim.getEvent2() : sim.getEvent1();
-                    return Map.entry(otherId, sim.getSimilarity());
-                })
-                .filter(entry -> !interactedSet.contains(entry.getKey()))
-                .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
-                .limit(maxResults)
-                .map(entry -> RecommendedEventDto.builder()
-                        .eventId(entry.getKey())
-                        .score(entry.getValue())
+        return eventProjections.stream()
+                .map(p -> RecommendedEventDto.builder()
+                        .eventId(p.getEventId())
+                        .score(p.getSimilarity())
                         .build())
                 .collect(Collectors.toList());
 
