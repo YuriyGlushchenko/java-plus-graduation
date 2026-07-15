@@ -61,33 +61,58 @@ public interface SimilarityRepository extends JpaRepository<Similarity, Long> {
                                                            @Param("userId") Long userId,
                                                            @Param("limit") int limit);
 
-    // "Получить K наиболее похожих мероприятий, с которыми пользователь уже взаимодействовал" - ищем соседей по подобию.
-    // Сразу получаем на выходе проекцию с оценкой пользователя (eventId, similarity, rating), без доп запросов.
-    // Учитываются только события, с которыми пользователь уже взаимодействовал благодаря i.user_id = :userId
+
+    // Получить K наиболее похожих мероприятий для каждого кандидата (проекция для candidateEventId, eventId, similarity, rating).
+    // Для каждого candidateEvent возвращаем не более K соседей. (используем оконную функцию ROW_NUMBER).
+    // В проекции, кроме коэффициента сходства, сразу получаем оценку пользователя (rating).
     @Query(value = """
             SELECT
-                CASE
-                    WHEN s.event1 = :candidateEvent THEN s.event2
-                    ELSE s.event1
-                END AS eventId,
-                s.similarity AS similarity,
-                i.weight AS userRating
-            FROM similarities s
-            JOIN interactions i
-                ON (
-                    s.event1 = :candidateEvent
-                    AND s.event2 = i.event_id
-                )
-                OR (
-                    s.event2 = :candidateEvent
-                    AND s.event1 = i.event_id
-                )
-            WHERE i.user_id = :userId
-            ORDER BY s.similarity DESC,
-                     eventId
-            LIMIT :limit
+                t.candidateEventId,
+                t.eventId,
+                t.similarity,
+                t.userRating
+            FROM (
+                SELECT
+                    q.*,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY q.candidateEventId
+                        ORDER BY q.similarity DESC,
+                                 q.eventId
+                    ) AS rn
+                FROM (
+            
+                    SELECT
+                        s.event1 AS candidateEventId,
+                        s.event2 AS eventId,
+                        s.similarity,
+                        i.weight AS userRating
+                    FROM similarities s
+                    JOIN interactions i
+                        ON i.event_id = s.event2
+                    WHERE s.event1 IN (:candidateEvents)
+                      AND i.user_id = :userId
+            
+                    UNION ALL
+            
+                    SELECT
+                        s.event2 AS candidateEventId,
+                        s.event1 AS eventId,
+                        s.similarity,
+                        i.weight AS userRating
+                    FROM similarities s
+                    JOIN interactions i
+                        ON i.event_id = s.event1
+                    WHERE s.event2 IN (:candidateEvents)
+                      AND i.user_id = :userId
+            
+                ) q
+            ) t
+            WHERE t.rn <= :limit
+            ORDER BY t.candidateEventId,
+                     t.similarity DESC,
+                     t.eventId
             """, nativeQuery = true)
-    List<NeighborProjection> findNearestNeighbors(@Param("candidateEvent") Long candidateEvent,
+    List<NeighborProjection> findNearestNeighbors(@Param("candidateEvents") List<Long> candidateEvents,
                                                   @Param("userId") Long userId,
                                                   @Param("limit") int limit);
 

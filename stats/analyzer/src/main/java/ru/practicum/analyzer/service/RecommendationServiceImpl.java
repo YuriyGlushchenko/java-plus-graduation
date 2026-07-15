@@ -14,6 +14,7 @@ import ru.practicum.analyzer.repository.projection.RecommendedEventProjection;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -60,29 +61,38 @@ public class RecommendationServiceImpl implements RecommendationService {
         }
 
         // ЭТАП 2, Вычисление оценки
+        Map<Long, List<NeighborProjection>> neighborsByCandidate = getNeighborsMap(candidates, userId);
+
         return candidates.stream()
-                .map(candidate -> predictScore(candidate, userId))
+                .map(candidate -> RecommendedEventDto.builder()
+                        .eventId(candidate.getEventId())
+                        .score(calculatePredictedScore(
+                                neighborsByCandidate.getOrDefault(
+                                        candidate.getEventId(),
+                                        List.of())))
+                        .build())
                 .sorted(Comparator.comparing(RecommendedEventDto::getScore).reversed())
                 .limit(maxResults)
                 .toList();
 
     }
 
-    private RecommendedEventDto predictScore(RecommendedEventProjection candidate,
-                                             Long userId) {
 
-        List<NeighborProjection> neighbors = similarityRepository.findNearestNeighbors(
-                candidate.getEventId(),
-                userId,
-                K_NEIGHBORS
-        );
+    private Map<Long, List<NeighborProjection>> getNeighborsMap(List<RecommendedEventProjection> candidates, Long userId) {
+        List<Long> candidateIds = candidates.stream()
+                .map(RecommendedEventProjection::getEventId)
+                .toList();
 
-        double predictedScore = calculatePredictedScore(neighbors);
+        List<NeighborProjection> allNeighbors =
+                similarityRepository.findNearestNeighbors(
+                        candidateIds,
+                        userId,
+                        K_NEIGHBORS
+                );
 
-        return RecommendedEventDto.builder()
-                .eventId(candidate.getEventId())
-                .score(predictedScore)
-                .build();
+        return allNeighbors.stream()
+                .collect(Collectors.groupingBy(
+                        NeighborProjection::getCandidateEventId));
     }
 
     private double calculatePredictedScore(List<NeighborProjection> neighbors) {
