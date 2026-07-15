@@ -20,6 +20,8 @@ public abstract class BaseProcessor<T extends SpecificRecordBase> implements Run
     private final KafkaProps kafkaProps;
     private final KafkaConsumer<Long, T> consumer;
 
+    private int processedRecordCount = 0;
+
     public BaseProcessor(
             KafkaProps kafkaProps,
             KafkaConsumer<Long, T> consumer) {
@@ -42,11 +44,10 @@ public abstract class BaseProcessor<T extends SpecificRecordBase> implements Run
 
                 ConsumerRecords<Long, T> records = consumer.poll(kafkaProps.getConsumer().getPollTimeout());
 
-                int count = 0;
                 for (ConsumerRecord<Long, T> record : records) {
                     handleRecord(record);
-                    manageOffsets(record, count);
-                    count++;
+                    manageOffsets(record);
+                    processedRecordCount++;
                 }
 
                 // фиксируем офсет ПОСЛЕ обработки (и промежуточно) = at-least-once (т.к.даже повторная обработка не приведет к увеличению веса события)
@@ -76,13 +77,13 @@ public abstract class BaseProcessor<T extends SpecificRecordBase> implements Run
         }
     }
 
-    private void manageOffsets(ConsumerRecord<Long, T> record, int count) {
+    private void manageOffsets(ConsumerRecord<Long, T> record) {
         currentOffsets.put(
                 new TopicPartition(record.topic(), record.partition()),
                 new OffsetAndMetadata(record.offset() + 1)
         );
 
-        if (count % 10 == 0) {
+        if (processedRecordCount % 10 == 0) {
             // а тут асинхронно, чтобы не тормозить процесс
             consumer.commitAsync(currentOffsets, (offsets, exception) -> {
                 if (exception != null) {
