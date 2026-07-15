@@ -11,7 +11,6 @@ import ru.practicum.common.exceptions.exceptions.ConditionsNotMetException;
 import ru.practicum.common.exceptions.exceptions.NotFoundException;
 import ru.practicum.eventsService.client.ParticipationRequestClient;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +81,11 @@ public class ParticipationRequestClientFallbackFactory implements FallbackFactor
                 Map<Long, Long> fallbackMap = new HashMap<>();
                 eventIds.forEach(id -> fallbackMap.put(id, -1L));
                 return fallbackMap;
+            }
+
+            @Override
+            public boolean hasConfirmedParticipation(Long eventId, Long userId) {
+                return false;
             }
         };
     }

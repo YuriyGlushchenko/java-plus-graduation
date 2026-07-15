@@ -1,0 +1,39 @@
+server:
+  port: ${PORT:0}
+
+kafka:
+  bootstrap-server: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+  producer:
+    topic: stats.events-similarity.v1
+    properties:
+      bootstrap.servers: ${kafka.bootstrap-server}
+      key.serializer: org.apache.kafka.common.serialization.LongSerializer
+      value.serializer: ru.practicum.serialization.AvroSerializer # универсальный серриализатор для Avro из модуля serialization
+      linger.ms: 0 # время (в миллисекундах), которое продюсер ждет, прежде чем отправить накопленные сообщения.
+
+  consumer:
+    topic: stats.user-actions.v1
+    poll-timeout: 100ms # тайм-аут, в течение которого консьюмер будет ожидать появления новых данных.
+    properties:
+      bootstrap.servers: ${kafka.bootstrap-server}
+      group.id: aggregator-group
+      client.id: aggregator-consumer
+      max.poll.records: 100 # максимум записей, которые может вернуть вызов метода poll за раз
+      fetch.max.bytes: 3072000 # максимальный размер данных, которые может вернуть вызов метода poll за раз
+      fetch.min.bytes: 1 # минимальный объём данных, который хотелось бы получить в результате выборки (для оптимизации сети)
+      fetch.max.wait.ms: 500 # Чтобы не прождать вечность пока будут собираться fetch.min.bytes
+      max.partition.fetch.bytes: 307200 # ограничивает количество данных, получаемых из каждой отдельной партиции (для равномерности, если вычитка из нескольких партиций)
+      enable.auto.commit: false # Включаем/выключаем автоматический коммит (просто раз в промежуток времени).
+      auto.commit.interval.ms: 5000 # Интервал (в миллисекундах) между автоматическими коммитами.
+      session.timeout.ms: 10000 # Время (в миллисекундах) отправки heartbeat(координатор отключит консьюмера от группы при превышении)
+      max.poll.interval.ms: 300000 # 5мин. Макс время (в миллисекундах) между запросы на выборку данных (консьюмер сам отключится от группы при превышении).
+
+      auto.offset.reset: earliest # Консьюмер начнёт читать данные с самого начала топика при подключении.
+      key.deserializer: org.apache.kafka.common.serialization.LongDeserializer
+      value.deserializer: ru.practicum.serialization.UserActionDeserializer
+
+
+logging:
+  level:
+    ru.practicum.aggregator: DEBUG

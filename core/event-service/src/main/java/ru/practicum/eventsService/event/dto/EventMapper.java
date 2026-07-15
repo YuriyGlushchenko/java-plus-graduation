@@ -90,7 +90,7 @@ public class EventMapper {
         }
     }
 
-    public static EventFullDto toEventFullDto(Event event, Long confirmedRequests, Long views, UserShortDto initiator) {
+    public static EventFullDto toEventFullDto(Event event, Long confirmedRequests, Double rating, UserShortDto initiator) {
         return EventFullDto.builder()
                 .id(event.getId())
                 .annotation(event.getAnnotation())
@@ -107,11 +107,32 @@ public class EventMapper {
                 .requestModeration(event.getRequestModeration())
                 .state(event.getState())
                 .title(event.getTitle())
-                .views(views)
+                .rating(rating)
                 .build();
     }
 
-    public static EventShortDto toEventShortDto(Event event, Long confirmedRequests, Long views) {
+    public static EventFullDto toEmptyEventFullDto(Event event) {
+        return EventFullDto.builder()
+                .id(event.getId())
+                .annotation(event.getAnnotation())
+                .category(CategoryMapper.toCategoryDto(event.getCategory()))
+                .confirmedRequests(-1L)
+                .createdOn(event.getCreatedOn())
+                .description(event.getDescription())
+                .eventDate(event.getEventDate())
+                .initiator(UserShortDto.builder().id(event.getInitiatorId()).build())
+                .location(toLocation(event.getLocation()))
+                .paid(event.getPaid())
+                .participantLimit(event.getParticipantLimit())
+                .publishedOn(event.getPublishedOn())
+                .requestModeration(event.getRequestModeration())
+                .state(event.getState())
+                .title(event.getTitle())
+                .rating(-1.)
+                .build();
+    }
+
+    public static EventShortDto toEventShortDto(Event event, Long confirmedRequests, Double rating) {
         return EventShortDto.builder()
                 .id(event.getId())
                 .annotation(event.getAnnotation())
@@ -125,7 +146,7 @@ public class EventMapper {
                 )
                 .paid(event.getPaid())
                 .title(event.getTitle())
-                .views(views)
+                .rating(rating)
                 .build();
     }
 

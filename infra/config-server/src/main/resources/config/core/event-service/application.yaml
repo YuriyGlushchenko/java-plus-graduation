@@ -52,3 +52,18 @@ resilience4j.circuitbreaker:
 
 app:
   name: ${spring.application.name:events-service}
+
+
+grpc:
+  client:
+    analyzer:
+      address: discovery:///analyzer
+      negotiationType: plaintext
+      enableKeepAlive: true
+      keepAliveWithoutCalls: true
+
+    collector:
+      address: discovery:///collector
+      negotiationType: plaintext
+      enableKeepAlive: true
+      keepAliveWithoutCalls: true

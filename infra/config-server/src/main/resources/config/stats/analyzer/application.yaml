@@ -1,0 +1,84 @@
+server:
+  port: ${PORT:0}
+
+kafka:
+  bootstrap-server: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+  producer:
+    topic: stats.events-similarity.v1
+    properties:
+      bootstrap.servers: ${kafka.bootstrap-server}
+      key.serializer: org.apache.kafka.common.serialization.StringSerializer
+      value.serializer: ru.practicum.serialization.AvroSerializer # универсальный серриализатор для Avro из модуля serialization
+      linger.ms: 0 # время (в миллисекундах), которое продюсер ждет, прежде чем отправить накопленные сообщения.
+
+  consumer:
+    poll-timeout: 100ms # тайм-аут, в течение которого консьюмер будет ожидать появления новых данных.
+
+    similarity:
+      topic: stats.events-similarity.v1
+      properties:
+        bootstrap.servers: ${kafka.bootstrap-server}
+        group.id: analyzer-group
+        client.id: analyzer-similarity-consumer
+        max.poll.records: 100 # максимум записей, которые может вернуть вызов метода poll за раз
+        fetch.max.bytes: 3072000 # максимальный размер данных, которые может вернуть вызов метода poll за раз
+        fetch.min.bytes: 1 # минимальный объём данных, который хотелось бы получить в результате выборки (для оптимизации сети)
+        fetch.max.wait.ms: 500 # Чтобы не прождать вечность пока будут собираться fetch.min.bytes
+        max.partition.fetch.bytes: 307200 # ограничивает количество данных, получаемых из каждой отдельной партиции (для равномерности, если вычитка из нескольких партиций)
+        enable.auto.commit: false # Включаем/выключаем автоматический коммит (просто раз в промежуток времени).
+        auto.commit.interval.ms: 5000 # Интервал (в миллисекундах) между автоматическими коммитами.
+        session.timeout.ms: 10000 # Время (в миллисекундах) отправки heartbeat(координатор отключит консьюмера от группы при превышении)
+        max.poll.interval.ms: 300000 # 5мин. Макс время (в миллисекундах) между запросы на выборку данных (консьюмер сам отключится от группы при превышении).
+
+        auto.offset.reset: earliest # Консьюмер начнёт читать данные с самого начала топика при подключении.
+        key.deserializer: org.apache.kafka.common.serialization.LongDeserializer
+        value.deserializer: ru.practicum.serialization.SimilarityAvroDeserializer
+
+    user-action:
+      topic: stats.user-actions.v1
+      properties:
+        bootstrap.servers: ${kafka.bootstrap-server}
+        group.id: analyzer-group
+        client.id: analyzer-action-consumer
+        max.poll.records: 100 # максимум записей, которые может вернуть вызов метода poll за раз
+        fetch.max.bytes: 3072000 # максимальный размер данных, которые может вернуть вызов метода poll за раз
+        fetch.min.bytes: 1 # минимальный объём данных, который хотелось бы получить в результате выборки (для оптимизации сети)
+        fetch.max.wait.ms: 500 # Чтобы не прождать вечность пока будут собираться fetch.min.bytes
+        max.partition.fetch.bytes: 307200 # ограничивает количество данных, получаемых из каждой отдельной партиции (для равномерности, если вычитка из нескольких партиций)
+        enable.auto.commit: false # Включаем/выключаем автоматический коммит (просто раз в промежуток времени).
+        auto.commit.interval.ms: 5000 # Интервал (в миллисекундах) между автоматическими коммитами.
+        session.timeout.ms: 10000 # Время (в миллисекундах) отправки heartbeat(координатор отключит консьюмера от группы при превышении)
+        max.poll.interval.ms: 300000 # 5мин. Макс время (в миллисекундах) между запросы на выборку данных (консьюмер сам отключится от группы при превышении).
+
+        auto.offset.reset: earliest # Консьюмер начнёт читать данные с самого начала топика при подключении.
+        key.deserializer: org.apache.kafka.common.serialization.LongDeserializer
+        value.deserializer: ru.practicum.serialization.UserActionDeserializer
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/analyzer_db
+    username: analyzer_user
+    password: analyzer_password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        format_sql: true
+
+  sql:
+    init:
+      mode: always
+
+grpc:
+  server:
+    port: ${GRPC_PORT:0}
+
+logging:
+  level:
+    ru.practicum.analyzer: DEBUG

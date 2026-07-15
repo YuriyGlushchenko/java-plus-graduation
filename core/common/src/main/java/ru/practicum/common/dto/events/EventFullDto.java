@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EventFullDto implements Enrichable  {
+public class EventFullDto implements Enrichable {
     private Long id;
 
     @NotBlank
@@ -56,7 +56,7 @@ public class EventFullDto implements Enrichable  {
     @Size(min = 3, max = 120)
     private String title;
 
-    private Long views;  // из сервиса статистики
+    private double rating;  // через gRPC-клиент сервиса Analyzer
 
     private Long commentsCount;
 

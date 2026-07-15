@@ -114,6 +114,9 @@ https://raw.githubusercontent.com/yandex-praktikum/java-explore-with-me/main/ewm
 6. Запустить все сервисы
 - docker compose up
 
+#### Запуск docker-compose отдельного файла:
+- docker-compose -f docker-compose.kafka.yml up
+
 ## 5. Доп. фича
 ### Comments:
 - коментарии к событиям

@@ -21,7 +21,7 @@ public interface EventService {
 
     List<EventFullDto> getEventsForAdminRequests(AdminUserEventParam param);
 
-    EventFullDto findEventById(String uri, String ip, Long id);
+    EventFullDto findEventById(String uri, String ip, Long id, long userId);
 
     EventFullDto createEvent(Long userId, NewEventDto newEventDto);
 
@@ -38,6 +38,10 @@ public interface EventService {
     EventRequestStatusUpdateResult updateRequestStatuses(Long userId, Long eventId, EventRequestStatusUpdateRequest request);
 
     List<EventShortDto> getShortDtosByIds(Collection<Long> eventIds);
+
+    List<EventFullDto> getRecommendationsForUser(long userId, int maxResults);
+
+    void likeEvent(long userId, long eventId);
 
 
 }

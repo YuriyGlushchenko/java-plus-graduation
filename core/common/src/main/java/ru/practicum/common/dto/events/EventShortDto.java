@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EventShortDto implements Enrichable  {
+public class EventShortDto implements Enrichable {
     private Long id;
 
     private String annotation;
@@ -37,7 +37,7 @@ public class EventShortDto implements Enrichable  {
 
     private String title;
 
-    private Long views;  // подгружаем отдельно из сервиса статистики
+    private double rating;  // подгружаем через gRPC-клиент сервиса Analyzer
 
     private Long commentsCount;
 

@@ -7,10 +7,6 @@ import org.springframework.stereotype.Component;
 import ru.practicum.common.dto.events.EventBaseDto;
 import ru.practicum.requestsService.request.client.EventClient;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 @Slf4j
 @Component
 public class EventClientFallbackFactory implements FallbackFactory<EventClient> {

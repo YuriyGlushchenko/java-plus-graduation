@@ -11,7 +11,8 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 @EnableAspectJAutoProxy // для AOP, логирование через аннотации @Loggable
 @ComponentScan(basePackages = {
         "ru.practicum.requestsService.request",
-        "ru.practicum.common"
+        "ru.practicum.common",
+        "ru.practicum.clients"
 })
 public class RequestsServiceApp {
     public static void main(String[] args) {

@@ -1,10 +1,14 @@
 package ru.practicum.eventsService.event.service;
 
 import feign.FeignException;
+import jakarta.ws.rs.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.clients.analyzer.AnalyzerGrpcClient;
+import ru.practicum.clients.collector.CollectorGrpcClient;
+import ru.practicum.clients.dto.RecommendedEventDto;
 import ru.practicum.common.dto.comments.CommentStatus;
 import ru.practicum.common.dto.events.*;
 import ru.practicum.common.dto.participationRequest.EventRequestStatusUpdateRequest;
@@ -30,10 +34,6 @@ import ru.practicum.eventsService.event.model.Event;
 import ru.practicum.eventsService.event.model.EventSort;
 import ru.practicum.eventsService.event.model.UserStateAction;
 import ru.practicum.eventsService.event.repository.EventRepository;
-import ru.practicum.stat.client.StatsClient;
-import ru.practicum.stat.dto.EndpointHitDto;
-import ru.practicum.stat.dto.ParamDto;
-import ru.practicum.stat.dto.ViewStatsDto;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -45,10 +45,11 @@ import java.util.stream.Collectors;
 public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
     private final CategoryRepository categoryRepository;
-    private final StatsClient statsClient;
     private final UserClient userClient;
     private final ParticipationRequestClient requestClient;
     private final CommentClient commentClient;
+    private final AnalyzerGrpcClient analyzerGrpcClient;
+    private final CollectorGrpcClient collectorGrpcClient;
 
     @Transactional
     @Override
@@ -61,7 +62,7 @@ public class EventServiceImpl implements EventService {
         Event event = EventMapper.toEvent(newEventDto, cat, userId);
         event = eventRepository.save(event);
 
-        return EventMapper.toEventFullDto(event, 0L, 0L, userDto);
+        return EventMapper.toEventFullDto(event, 0L, 0., userDto);
     }
 
     /**
@@ -103,11 +104,9 @@ public class EventServiceImpl implements EventService {
 
         enrichEvents(events);
 
-        if (param.getSortOrDefault() == EventSort.VIEWS) {  // из репозитория приходят уже отсортированными по дате
-            events.sort(Comparator.comparing(EventShortDto::getViews).reversed());
+        if (param.getSortOrDefault() == EventSort.VIEWS) {  // из репозитория приходят уже отсортированными по дате //
+            events.sort(Comparator.comparing(EventShortDto::getRating).reversed());
         }
-
-        sendHit(userEventParam.getUri(), userEventParam.getIp(), LocalDateTime.now());
 
         return events;
     }
@@ -204,14 +203,14 @@ public class EventServiceImpl implements EventService {
      * Возвращает опубликованное событие по его идентификатору.(Публичный запрос)
      */
     @Override
-    public EventFullDto findEventById(String uri, String ip, Long id) {
+    public EventFullDto findEventById(String uri, String ip, Long id, long userId) {
         EventFullDto event = findEventFullDtoById(id);
 
         if (!event.getState().equals(EventState.PUBLISHED)) {
             throw new NotFoundException("Published Event with id=" + id + " was not found");
         }
 
-        sendHit(uri, ip, LocalDateTime.now());
+        collectorGrpcClient.view(userId, id);
         enrichEvent(event);
 
         return event;
@@ -243,7 +242,7 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Event with id=" + eventId + " not found for user with id=" + userId);
         }
 
-        return requestClient.updateRequestStatuses(eventId,event.getParticipantLimit() ,updateRequest); // обработка ошибок в fallback фабрике
+        return requestClient.updateRequestStatuses(eventId, event.getParticipantLimit(), updateRequest); // обработка ошибок в fallback фабрике
     }
 
     /**
@@ -258,7 +257,7 @@ public class EventServiceImpl implements EventService {
         List<Event> events = eventRepository.findAllByIdIn(eventIds);
 
         List<EventShortDto> dtos = events.stream()
-                .map(event -> EventMapper.toEventShortDto(event, 0L, 0L))
+                .map(event -> EventMapper.toEventShortDto(event, 0L, 0.))
                 .collect(Collectors.toList());
 
         enrichEvents(dtos);
@@ -431,7 +430,7 @@ public class EventServiceImpl implements EventService {
             return;
         }
         enrichEventsWithConfirmedRequests(events);
-        enrichEventsWithViews(events);
+        enrichEventsWithRating(events);
         enrichEventsListWithCommentsCount(events);
         enrichEventsWithUsers(events);
     }
@@ -455,28 +454,46 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * Дополняет каждое событие из списка  количеством просмотров.
+     * Дополняет каждое событие рейтингом.
      */
-    private void enrichEventsWithViews(List<? extends Viewable> events) {
+    private void enrichEventsWithRating(List<? extends Rateable> events) {
         if (events.isEmpty()) {
             return;
         }
 
-        LocalDateTime minEventDate = events.stream()
-                .map(Viewable::getPublishedOn)
-                .filter(Objects::nonNull)
-                .min(LocalDateTime::compareTo)
-                .orElse(null);
+        try {
+            // Собираем ID мероприятий
+            List<Long> eventIds = events.stream()
+                    .map(Rateable::getId)
+                    .filter(Objects::nonNull)
+                    .toList();
 
-        String[] uris = events.stream()
-                .map(e -> "/events/" + e.getId())
-                .toArray(String[]::new);
+            if (eventIds.isEmpty()) {
+                return;
+            }
 
-        Map<Long, Long> hits = fetchViews(uris, minEventDate);
+            // Получаем рейтинги из Analyzer
+            List<RecommendedEventDto> ratings = analyzerGrpcClient.getInteractionsCount(eventIds);
 
-        events.forEach(event ->
-                event.setViews(hits.getOrDefault(event.getId(), 0L))
-        );
+            // eventId -> rating
+            Map<Long, Double> ratingsMap = ratings.stream()
+                    .collect(Collectors.toMap(
+                            RecommendedEventDto::getEventId,
+                            RecommendedEventDto::getScore
+                    ));
+
+            // Заполняем рейтинг
+            events.forEach(event ->
+                    event.setRating(ratingsMap.getOrDefault(event.getId(), 0.0))
+            );
+
+            log.debug("Rating enriched for {} events", events.size());
+
+        } catch (Exception e) {
+            log.error("Failed to fetch ratings from analyzer service", e);
+
+            events.forEach(event -> event.setRating(0.0));
+        }
     }
 
     /**
@@ -535,27 +552,11 @@ public class EventServiceImpl implements EventService {
      * Собирает полное DTO события с полными данными по просмотрам, заявкам, комментариям.
      */
     private EventFullDto buildEventFullDto(Event event) {
-        String[] uris = {"/events/" + event.getId()};
-        Map<Long, Long> hits = fetchViews(uris, event.getEventDate());
-        Long views = hits.getOrDefault(event.getId(), 0L);
-
-        Long confirmedRequests = getConfirmedRequestsCount(event);
-        UserShortDto initiator = getUserById(event.getInitiatorId());
-
-        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmedRequests, views, initiator);
-        enrichEventsListWithCommentsCount(List.of(eventFullDto));
+        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, -1L, -1., null);
+        enrichEvents(List.of(eventFullDto));
 
         return eventFullDto;
     }
-
-    /**
-     * Возвращает количество подтвержденных заявок на событие.
-     */
-    private Long getConfirmedRequestsCount(Event event) {
-        List<EventShortDto> list = List.of(EventShortDto.builder().id(event.getId()).build());
-        return getConfirmedRequestsCounts(list).get(event.getId());
-    }
-
 
     /**
      * Получает количество подтвержденных заявок для списка событий.
@@ -577,62 +578,82 @@ public class EventServiceImpl implements EventService {
         }
 
         return requestClient.getConfirmedRequestsCounts(eventIds); // вернет все -1 при недоступности сервиса
-
-
     }
 
     /**
-     * Запрашивает в сервисе статистики через feign-клиент и возвращает количество просмотров событий.
+     * Получить рекомендации для пользователя.
      */
-    private Map<Long, Long> fetchViews(String[] uris, LocalDateTime date) {
-        ParamDto statRequestParam = ParamDto.builder()
-                .start(date)
-                .end(LocalDateTime.now().plusSeconds(1))
-                .uris(uris)
-                .unique(true)
-                .build();
-
-        log.debug("Fetching views for uris: {}, params: {}", Arrays.toString(uris), statRequestParam);
+    @Override
+    public List<EventFullDto> getRecommendationsForUser(long userId, int maxResults) {
+        log.debug("Getting recommendations for user: {}, maxResults: {}", userId, maxResults);
 
         try {
-            List<ViewStatsDto> stats = statsClient.get(statRequestParam);
-            log.debug("Stats received from client: {}", stats);
+            // ✅ Клиент уже вернул List<RecommendedEventDto>
+            List<RecommendedEventDto> recommendedEvents = analyzerGrpcClient
+                    .getRecommendationsForUser(userId, maxResults);
 
-            if (stats.size() == 1 && stats.getFirst().getHits() == -1) {
-                log.error("Failed to fetch views from stats-service, returned hits = -1 (Fail marker)");
-                return Collections.emptyMap();
+            if (recommendedEvents.isEmpty()) {
+                log.debug("No recommendations found for user: {}", userId);
+                return List.of();
             }
 
-            return stats.stream()
-                    .filter(stat -> stat.getUri() != null && stat.getHits() != -1)
+            // Извлекаем ID мероприятий
+            List<Long> eventIds = recommendedEvents.stream()
+                    .map(RecommendedEventDto::getEventId)
+                    .collect(Collectors.toList());
+
+            // Загружаем события из БД
+            List<Event> events = eventRepository.findAllById(eventIds);
+
+            if (events.isEmpty()) {
+                log.warn("No events found in DB for recommended event IDs: {}", eventIds);
+                return List.of();
+            }
+
+            // Преобразуем в EventFullDto
+            List<EventFullDto> result = events.stream()
+                    .map(EventMapper::toEmptyEventFullDto)
+                    .collect(Collectors.toList());
+
+            // Обогащаем рейтингом, заявками, комментариями
+            enrichEvents(result);
+
+            // Сортируем по score из рекомендаций
+            Map<Long, Double> scoreMap = recommendedEvents.stream()
                     .collect(Collectors.toMap(
-                            this::extractEventIdFromUri,
-                            ViewStatsDto::getHits
+                            RecommendedEventDto::getEventId,
+                            RecommendedEventDto::getScore
                     ));
+
+            result.sort(Comparator.comparing(
+                    dto -> scoreMap.getOrDefault(dto.getId(), 0.0),
+                    Comparator.reverseOrder()
+            ));
+
+            log.info("Returning {} recommendations for user: {}", result.size(), userId);
+            return result;
+
         } catch (Exception e) {
-            log.error("Failed to fetch views from stats-service", e);
-            return Collections.emptyMap();
+            log.error("Failed to get recommendations for user: {}", userId, e);
+            return List.of();
         }
     }
 
-    /**
-     * Извлекает идентификатор события (Id) из URI.
-     */
-    private Long extractEventIdFromUri(ViewStatsDto stat) {
-        String uri = stat.getUri(); // приходить должно в формате "/events/{id}"
-        return Long.parseLong(uri.substring(uri.lastIndexOf('/') + 1));
+    @Override
+    @Transactional
+    public void likeEvent(long userId, long eventId) {
+        Event event = getEventById(eventId);
+
+
+        if (!requestClient.hasConfirmedParticipation(eventId, userId)) {
+            throw new BadRequestException(
+                    "User can like only attended events");
+        }
+
+        collectorGrpcClient.like(userId, eventId);
+
+        log.info("User {} liked event {}", userId, eventId);
     }
 
-    /**
-     * Отправляет информацию о просмотре события в сервис статистики.
-     */
-    private void sendHit(String uri, String ip, LocalDateTime time) {
-        EndpointHitDto hitDto = EndpointHitDto.builder()
-                .uri(uri)
-                .ip(ip)
-                .timestamp(time)
-                .build();
-        statsClient.hit(hitDto);
-    }
 
 }
